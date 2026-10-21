@@ -68,6 +68,22 @@ const formatToInputDateTime = (dateStr?: string | null): string => {
   }
 };
 
+const getISTDate = (dateVal?: string | null): string => {
+  if (!dateVal) return "";
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return "";
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(d);
+  } catch {
+    return "";
+  }
+};
+
 export function EditBulkerEntryModal({
   isOpen,
   onClose,
@@ -643,12 +659,30 @@ export function EditBulkerEntryModal({
                       type="datetime-local"
                       className="bg-[#090a0c] border-[#22242a] text-[#ffffff] text-xs h-9 [color-scheme:dark]"
                       value={formData.allocatedAt}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          allocatedAt: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => {
+                        const newAlloc = e.target.value;
+                        setFormData((prev) => {
+                          let nextOrderDate = prev.orderDate;
+                          if (newAlloc) {
+                            const allocIST = getISTDate(newAlloc);
+                            if (prev.plantOutAt) {
+                              const outIST = getISTDate(prev.plantOutAt);
+                              if (outIST && allocIST && outIST !== allocIST) {
+                                nextOrderDate = outIST;
+                              } else {
+                                nextOrderDate = allocIST;
+                              }
+                            } else {
+                              nextOrderDate = allocIST;
+                            }
+                          }
+                          return {
+                            ...prev,
+                            allocatedAt: newAlloc,
+                            orderDate: nextOrderDate,
+                          };
+                        });
+                      }}
                       disabled={isCancelled}
                     />
                   </div>
@@ -679,12 +713,28 @@ export function EditBulkerEntryModal({
                       type="datetime-local"
                       className="bg-[#090a0c] border-[#22242a] text-[#ffffff] text-xs h-9 [color-scheme:dark]"
                       value={formData.plantOutAt}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          plantOutAt: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => {
+                        const newOut = e.target.value;
+                        setFormData((prev) => {
+                          let nextOrderDate = prev.orderDate;
+                          if (newOut && prev.allocatedAt) {
+                            const outIST = getISTDate(newOut);
+                            const allocIST = getISTDate(prev.allocatedAt);
+                            if (outIST && allocIST && outIST !== allocIST) {
+                              nextOrderDate = outIST;
+                            } else if (outIST && allocIST && outIST === allocIST) {
+                              nextOrderDate = allocIST;
+                            }
+                          } else if (newOut && !prev.allocatedAt) {
+                            nextOrderDate = getISTDate(newOut);
+                          }
+                          return {
+                            ...prev,
+                            plantOutAt: newOut,
+                            orderDate: nextOrderDate,
+                          };
+                        });
+                      }}
                       disabled={isCancelled}
                     />
                   </div>
