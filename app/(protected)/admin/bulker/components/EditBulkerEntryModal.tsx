@@ -267,6 +267,10 @@ export function EditBulkerEntryModal({
         setValidationError("Plant Out time cannot precede Plant In time.");
         return;
       }
+      if (vTime && poTime && poTime < vTime) {
+        setValidationError("Plant Out time cannot precede VRA Entry time.");
+        return;
+      }
     }
 
     if (isAdmin && formData.status !== selectedEntry.status) {
@@ -301,14 +305,16 @@ export function EditBulkerEntryModal({
           return;
         }
       }
+
+      if (formData.status === "OUT") {
+        if (selectedEntry.status !== "SEND" && !(selectedEntry.status === "HOLD" && selectedEntry.plantInAt)) {
+          setValidationError("Cannot mark OUT: Truck must be in SEND status (inside the plant) before departure.");
+          return;
+        }
+      }
     }
 
     if (formData.status === "OUT") {
-      if (selectedEntry.status !== "SEND" && !(selectedEntry.status === "HOLD" && selectedEntry.plantInAt)) {
-        setValidationError("Cannot mark OUT: Truck must be in SEND status (inside the plant) before departure.");
-        return;
-      }
-
       const missing: string[] = [];
       if (!formData.bulkerNumber?.trim()) missing.push("Bulker Number");
       if (!formData.transporterName?.trim()) missing.push("Transporter");

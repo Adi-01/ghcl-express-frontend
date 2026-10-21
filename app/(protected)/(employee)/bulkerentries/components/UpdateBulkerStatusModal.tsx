@@ -200,7 +200,7 @@ export function UpdateBulkerStatusModal({
     }
 
     // 6. Prerequisites for entering OUT
-    if (status === "OUT") {
+    if (status === "OUT" && selectedEntry.status !== "OUT") {
       if (selectedEntry.status !== "SEND" && !(selectedEntry.status === "HOLD" && selectedEntry.plantInAt)) {
         toast.error("Cannot mark OUT: Truck must be in SEND status (inside the plant) before departure.");
         return;
