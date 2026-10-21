@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Clock, Truck } from "lucide-react";
+import { Loader2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import type { BulkerEntry, UpdateBulkerEntryPayload } from "@/lib/types/bulker";
 import { useUpdateBulkerEntryMutation } from "@/lib/hooks/mutations/useBulkerMutations";
@@ -130,8 +130,14 @@ export function UpdatePlantOutModal({
 
         {selectedEntry && (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Context Summary Card */}
-            <div className="p-3 rounded-md bg-[#090a0c] border border-[#22242a] space-y-2 text-xs">
+            {/* Essential Context Summary Card: Truck Number, Customer, Order Date */}
+            <div className="p-3.5 rounded-md bg-[#090a0c] border border-[#22242a] space-y-2.5 text-xs">
+              <div className="flex justify-between items-center text-zinc-400">
+                <span>Truck Number:</span>
+                <span className="text-white font-mono font-semibold">
+                  {selectedEntry.bulkerNumber}
+                </span>
+              </div>
               <div className="flex justify-between items-center text-zinc-400">
                 <span>Customer:</span>
                 <span className="text-white font-medium">
@@ -139,30 +145,14 @@ export function UpdatePlantOutModal({
                 </span>
               </div>
               <div className="flex justify-between items-center text-zinc-400">
-                <span>Destination:</span>
-                <span className="text-white">
-                  {selectedEntry.destination || "—"}
+                <span>Order Date:</span>
+                <span className="text-white font-mono">
+                  {formatDateTime(selectedEntry.orderDate, "date")}
                 </span>
               </div>
-              {selectedEntry.salesOrderNumber && (
-                <div className="flex justify-between items-center text-zinc-400">
-                  <span>SO Number:</span>
-                  <span className="text-white font-mono">
-                    {selectedEntry.salesOrderNumber}
-                  </span>
-                </div>
-              )}
-              {selectedEntry.plantInAt && (
-                <div className="flex justify-between items-center text-zinc-400 border-t border-[#22242a] pt-1.5 mt-1.5">
-                  <span>Plant In Time:</span>
-                  <span className="text-zinc-300 font-mono">
-                    {formatDateTime(selectedEntry.plantInAt)}
-                  </span>
-                </div>
-              )}
             </div>
 
-            {/* Plant Out Timestamp */}
+            {/* Plant Out Timestamp Edit */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium text-[#8a8f98] uppercase tracking-wider">
@@ -184,11 +174,11 @@ export function UpdatePlantOutModal({
                 className="bg-[#090a0c] border-[#22242a] text-white text-xs h-9"
               />
               <p className="text-[11px] text-zinc-500">
-                Order date will automatically sync if departure is on a different calendar day.
+                Order date will automatically update if departure is on a different calendar day.
               </p>
             </div>
 
-            {/* Remarks */}
+            {/* Remarks Edit */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-[#8a8f98] uppercase tracking-wider">
                 Remarks
