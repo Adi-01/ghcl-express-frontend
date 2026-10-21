@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { type LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { useQueryClient } from "@tanstack/react-query";
-import { Truck, RotateCcw } from "lucide-react";
+import { Truck, RotateCcw, Clock } from "lucide-react";
 
 import { EmployeeTable } from "@/components/shared/EmployeeTable";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { useBulkerEntriesQuery } from "@/lib/hooks/queries/useBulkerQuery";
 import { QUERY_KEYS } from "@/lib/constants";
 import type { BulkerEntry, BulkerStatus } from "@/lib/types/bulker";
 import { cn, formatDateTime } from "@/lib/utils";
+import { UpdatePlantOutModal } from "./UpdatePlantOutModal";
 
 const STATUS_COLORS: Record<string, string> = {
   OUT: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
@@ -26,6 +27,10 @@ export function UnactiveBulkerTable() {
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
+
+  // Modal State for Plant Out timing
+  const [selectedEntry, setSelectedEntry] = useState<BulkerEntry | null>(null);
+  const [isPlantOutOpen, setIsPlantOutOpen] = useState(false);
 
   const queryParams = {
     page,
@@ -152,6 +157,29 @@ export function UnactiveBulkerTable() {
           </span>
         ),
       },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const entry = row.original;
+          if (entry.status !== "OUT") return null;
+          return (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setSelectedEntry(entry);
+                setIsPlantOutOpen(true);
+              }}
+              title="Update Plant Out Timing"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-white"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span className="sr-only">Update Plant Out Timing</span>
+            </Button>
+          );
+        },
+      },
     ],
     []
   );
@@ -203,7 +231,12 @@ export function UnactiveBulkerTable() {
           ) : undefined
         }
       />
+
+      <UpdatePlantOutModal
+        isOpen={isPlantOutOpen}
+        onClose={setIsPlantOutOpen}
+        selectedEntry={selectedEntry}
+      />
     </div>
   );
 }
-

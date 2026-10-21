@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -15,10 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Loader2, AlertTriangle, ShieldAlert, Clock } from "lucide-react";
 import { toast } from "sonner";
-import type { BulkerEntry, BulkerStatus } from "@/lib/types/bulker";
-import { useUpdateBulkerStatusMutation } from "@/lib/hooks/mutations/useBulkerMutations";
+import type { BulkerEntry, BulkerStatus, UpdateBulkerEntryPayload } from "@/lib/types/bulker";
+import { useUpdateBulkerEntryMutation } from "@/lib/hooks/mutations/useBulkerMutations";
 
 interface UpdateBulkerStatusModalProps {
   isOpen: boolean;
@@ -38,6 +39,34 @@ const STATUS_TIER: Record<BulkerStatus, number> = {
 
 const ADMIN_STATUSES: BulkerStatus[] = ["VRA", "ALLOCATED", "SEND", "OUT", "HOLD", "CANCEL"];
 
+const formatToInputDateTime = (dateStr?: string | null): string => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const MM = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+  } catch {
+    return "";
+  }
+};
+
+const getCurrentInputDateTime = (): string => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const MM = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mm = pad(d.getMinutes());
+  return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+};
+
 export function UpdateBulkerStatusModal({
   isOpen,
   onClose,
@@ -45,7 +74,11 @@ export function UpdateBulkerStatusModal({
   isAdmin = false,
 }: UpdateBulkerStatusModalProps) {
   const [status, setStatus] = useState<BulkerStatus | "">("");
-  const updateStatusMutation = useUpdateBulkerStatusMutation();
+  const [vraInAt, setVraInAt] = useState<string>("");
+  const [allocatedAt, setAllocatedAt] = useState<string>("");
+  const [plantInAt, setPlantInAt] = useState<string>("");
+
+  const updateEntryMutation = useUpdateBulkerEntryMutation();
 
   const isCancelled = selectedEntry?.status === "CANCEL";
   const isVRA = selectedEntry?.status === "VRA";
@@ -81,6 +114,9 @@ export function UpdateBulkerStatusModal({
       } else {
         setStatus("");
       }
+      setVraInAt(formatToInputDateTime(selectedEntry.vraInAt));
+      setAllocatedAt(formatToInputDateTime(selectedEntry.allocatedAt));
+      setPlantInAt(formatToInputDateTime(selectedEntry.plantInAt));
     }
   }, [selectedEntry, isOpen, allowedStatuses]);
 
@@ -186,10 +222,38 @@ export function UpdateBulkerStatusModal({
       }
     }
 
+    // Chronological Sanity Checks
+    if (vraInAt && allocatedAt && new Date(allocatedAt).getTime() < new Date(vraInAt).getTime()) {
+      toast.error("Allocation time cannot precede VRA entry time.");
+      return;
+    }
+    if (allocatedAt && plantInAt && new Date(plantInAt).getTime() < new Date(allocatedAt).getTime()) {
+      toast.error("Plant entry time cannot precede allocation time.");
+      return;
+    }
+    if (vraInAt && plantInAt && new Date(plantInAt).getTime() < new Date(vraInAt).getTime()) {
+      toast.error("Plant entry time cannot precede VRA entry time.");
+      return;
+    }
+
     try {
-      await updateStatusMutation.mutateAsync({
-        id: selectedEntry.id,
+      const payload: UpdateBulkerEntryPayload = {
         status: status as BulkerStatus,
+      };
+
+      if (vraInAt) {
+        payload.vraInAt = new Date(vraInAt).toISOString();
+      }
+      if (allocatedAt) {
+        payload.allocatedAt = new Date(allocatedAt).toISOString();
+      }
+      if (plantInAt) {
+        payload.plantInAt = new Date(plantInAt).toISOString();
+      }
+
+      await updateEntryMutation.mutateAsync({
+        id: selectedEntry.id,
+        payload,
       });
 
       onClose(false);
@@ -198,12 +262,32 @@ export function UpdateBulkerStatusModal({
     }
   };
 
+  const isAllocatedActive =
+    status === "ALLOCATED" ||
+    status === "SEND" ||
+    status === "HOLD" ||
+    status === "OUT" ||
+    Boolean(selectedEntry?.allocatedAt);
+
+  const isPlantInActive =
+    status === "SEND" ||
+    status === "OUT" ||
+    (status === "HOLD" && Boolean(selectedEntry?.plantInAt)) ||
+    Boolean(selectedEntry?.plantInAt);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm p-6 bg-[#121316] border-[#22242a] text-[#ffffff] shadow-2xl rounded-lg">
+      <DialogContent className="sm:max-w-md p-6 bg-[#121316] border-[#22242a] text-[#ffffff] shadow-2xl rounded-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-lg font-medium tracking-tight text-[#ffffff] flex items-center justify-between">
-            <span>Update Status</span>
+            <span className="flex items-center gap-2">
+              <span>Update Dispatch</span>
+              {selectedEntry && (
+                <span className="text-xs px-2 py-0.5 rounded font-mono font-semibold bg-white/10 text-white">
+                  {selectedEntry.bulkerNumber}
+                </span>
+              )}
+            </span>
             <span className="text-xs px-2 py-0.5 rounded font-mono font-normal uppercase bg-zinc-800 text-zinc-300 border border-border">
               {selectedEntry?.status}
             </span>
@@ -247,6 +331,7 @@ export function UpdateBulkerStatusModal({
               </div>
             )}
 
+            {/* Target Status Select */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-[#8a8f98] uppercase tracking-wider">
                 Target Status
@@ -270,18 +355,102 @@ export function UpdateBulkerStatusModal({
               </Select>
             </div>
 
+            {/* Divider */}
+            <div className="border-t border-[#22242a] pt-3">
+              <div className="text-xs font-medium text-[#8a8f98] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Milestone Timings</span>
+              </div>
+
+              <div className="space-y-3">
+                {/* VRA In At */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-zinc-400 font-medium">
+                      VRA In Time
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setVraInAt(getCurrentInputDateTime())}
+                      className="text-[10px] text-zinc-400 hover:text-white underline decoration-dotted"
+                    >
+                      Now
+                    </button>
+                  </div>
+                  <Input
+                    type="datetime-local"
+                    value={vraInAt}
+                    onChange={(e) => setVraInAt(e.target.value)}
+                    className="bg-[#090a0c] border-[#22242a] text-white text-xs h-9"
+                  />
+                </div>
+
+                {/* Allocated At */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-zinc-400 font-medium">
+                      Allocation Time
+                    </label>
+                    {isAllocatedActive && (
+                      <button
+                        type="button"
+                        onClick={() => setAllocatedAt(getCurrentInputDateTime())}
+                        className="text-[10px] text-zinc-400 hover:text-white underline decoration-dotted"
+                      >
+                        Now
+                      </button>
+                    )}
+                  </div>
+                  <Input
+                    type="datetime-local"
+                    value={allocatedAt}
+                    onChange={(e) => setAllocatedAt(e.target.value)}
+                    disabled={!isAllocatedActive}
+                    placeholder={!isAllocatedActive ? "Set once allocated" : ""}
+                    className="bg-[#090a0c] border-[#22242a] text-white text-xs h-9 disabled:opacity-40"
+                  />
+                </div>
+
+                {/* Plant In At */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-zinc-400 font-medium">
+                      Plant In Time (SEND)
+                    </label>
+                    {isPlantInActive && (
+                      <button
+                        type="button"
+                        onClick={() => setPlantInAt(getCurrentInputDateTime())}
+                        className="text-[10px] text-zinc-400 hover:text-white underline decoration-dotted"
+                      >
+                        Now
+                      </button>
+                    )}
+                  </div>
+                  <Input
+                    type="datetime-local"
+                    value={plantInAt}
+                    onChange={(e) => setPlantInAt(e.target.value)}
+                    disabled={!isPlantInActive}
+                    placeholder={!isPlantInActive ? "Set once entered plant" : ""}
+                    className="bg-[#090a0c] border-[#22242a] text-white text-xs h-9 disabled:opacity-40"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="pt-2">
               <Button
                 type="submit"
                 className="w-full bg-[#ffffff] text-[#090a0c] hover:bg-[#eaeaea] font-medium transition-colors"
-                disabled={updateStatusMutation.isPending || !status || (isVRA && !isAdmin)}
+                disabled={updateEntryMutation.isPending || !status || (isVRA && !isAdmin)}
               >
-                {updateStatusMutation.isPending ? (
+                {updateEntryMutation.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Updating...
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving Changes...
                   </>
                 ) : (
-                  "Update Status"
+                  "Save Status & Timings"
                 )}
               </Button>
             </div>
