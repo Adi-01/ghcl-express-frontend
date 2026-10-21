@@ -135,7 +135,7 @@ export function NightCheckingClient() {
       {
         accessorKey: "transporter_name",
         header: "Transporter",
-        size: 180,
+        size: 160,
         cell: ({ row }) => {
           const name = row.original.transporterName || row.original.transporter_name;
           return (
@@ -148,7 +148,7 @@ export function NightCheckingClient() {
       {
         id: "timeDetails",
         header: "Time & Standby Duration",
-        size: 340,
+        size: 380,
         cell: ({ row }) => {
           const entryDate = row.original.entryDate || row.original.entry_date;
           const exitDate = row.original.exitDate || row.original.exit_date;

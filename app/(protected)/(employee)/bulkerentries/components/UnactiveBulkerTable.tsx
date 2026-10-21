@@ -159,7 +159,8 @@ export function UnactiveBulkerTable() {
       },
       {
         id: "actions",
-        header: "Actions",
+        header: "",
+        size: 50,
         cell: ({ row }) => {
           const entry = row.original;
           if (entry.status !== "OUT") return null;
