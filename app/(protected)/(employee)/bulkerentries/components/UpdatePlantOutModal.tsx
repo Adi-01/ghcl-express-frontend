@@ -120,11 +120,6 @@ export function UpdatePlantOutModal({
               <Clock className="w-4 h-4 text-zinc-400" />
               <span>Update Plant Out Timing</span>
             </span>
-            {selectedEntry && (
-              <span className="text-xs px-2 py-0.5 rounded font-mono font-semibold bg-white/10 text-white">
-                {selectedEntry.bulkerNumber}
-              </span>
-            )}
           </DialogTitle>
         </DialogHeader>
 
