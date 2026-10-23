@@ -58,6 +58,7 @@ export function DocumentUploadModal({
 }: DocumentUploadModalProps) {
   const [docType, setDocType] = useState<DocumentType>("AADHAAR");
   const [docNumber, setDocNumber] = useState("");
+  const [docNumberTouched, setDocNumberTouched] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -65,16 +66,32 @@ export function DocumentUploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadMutation = useUploadDocumentMutation();
 
+  const isDocNumberRequired = docType === "AADHAAR" || docType === "PAN";
+
   // Instant Validation for document number
   const getDocNumberError = () => {
-    if (!docNumber.trim()) return null;
     const cleanNum = docNumber.trim().toUpperCase();
-    if (docType === "AADHAAR" && !AADHAAR_REGEX.test(cleanNum)) {
-      return "Aadhaar number must be exactly 12 numeric digits.";
+
+    if (docType === "AADHAAR") {
+      if (!cleanNum) {
+        return "Aadhaar number is required.";
+      }
+      if (!AADHAAR_REGEX.test(cleanNum)) {
+        return "Aadhaar number must be exactly 12 numeric digits.";
+      }
+      return null;
     }
-    if (docType === "PAN" && !PAN_REGEX.test(cleanNum)) {
-      return "PAN format is invalid (must be 5 letters, 4 digits, 1 letter, e.g. ABCDE1234F).";
+
+    if (docType === "PAN") {
+      if (!cleanNum) {
+        return "PAN card number is required.";
+      }
+      if (!PAN_REGEX.test(cleanNum)) {
+        return "PAN format is invalid (must be 5 letters, 4 digits, 1 letter, e.g. ABCDE1234F).";
+      }
+      return null;
     }
+
     return null;
   };
 
@@ -165,6 +182,7 @@ export function DocumentUploadModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setDocNumberTouched(true);
     if (!file || hasErrors || uploadMutation.isPending) return;
 
     if (file.size > MAX_FILE_SIZE) {
@@ -189,6 +207,7 @@ export function DocumentUploadModal({
       onSuccess: () => {
         setFile(null);
         setDocNumber("");
+        setDocNumberTouched(false);
         setErrorMessage(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
         onOpenChange(false);
@@ -208,6 +227,7 @@ export function DocumentUploadModal({
     if (uploadMutation.isPending) return;
     setErrorMessage(null);
     setFile(null);
+    setDocNumberTouched(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     onOpenChange(false);
   };
@@ -239,6 +259,7 @@ export function DocumentUploadModal({
               value={docType}
               onValueChange={(val) => {
                 setDocType(val as DocumentType);
+                setDocNumberTouched(false);
                 setErrorMessage(null);
               }}
               disabled={uploadMutation.isPending}
@@ -257,27 +278,35 @@ export function DocumentUploadModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="docNum" className="text-xs text-muted-foreground">
-              Document Number (Optional)
+            <Label htmlFor="docNum" className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>Document Number</span>
+              {isDocNumberRequired ? (
+                <span className="text-rose-400 font-semibold">* (Required)</span>
+              ) : (
+                <span className="text-zinc-500">(Optional)</span>
+              )}
             </Label>
             <Input
               id="docNum"
               placeholder={
                 docType === "AADHAAR"
-                  ? "e.g. 123456789012"
+                  ? "Enter 12-digit Aadhaar number"
                   : docType === "PAN"
-                  ? "e.g. ABCDE1234F"
+                  ? "Enter 10-character PAN (e.g. ABCDE1234F)"
                   : "Enter identity number"
               }
               value={docNumber}
               onChange={(e) => {
                 setDocNumber(e.target.value.toUpperCase());
+                setDocNumberTouched(true);
                 setErrorMessage(null);
               }}
+              onBlur={() => setDocNumberTouched(true)}
+              maxLength={docType === "AADHAAR" ? 12 : docType === "PAN" ? 10 : 50}
               disabled={uploadMutation.isPending}
               className="uppercase font-mono bg-black/40 border-border"
             />
-            {docNumberError && (
+            {docNumberTouched && docNumberError && (
               <p className="text-xs text-destructive animate-in fade-in">
                 {docNumberError}
               </p>
