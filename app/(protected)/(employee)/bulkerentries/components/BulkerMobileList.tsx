@@ -118,7 +118,9 @@ export function BulkerMobileList({
               {/* Row 1: serial number + bulker number + transporter name on left, status on right */}
               <div className="flex items-center justify-between gap-2 text-xs font-medium">
                 <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
-                  <span className="text-zinc-500 shrink-0">#{serial}</span>
+                  <div className="border p-0.5 w-fit min-w-6 rounded-md bg-muted flex items-center justify-center">
+                  <span className="text-zinc-400 shrink-0">#{serial}</span>
+                  </div>
                   <span className="text-white shrink-0">{entry.bulkerNumber}</span>
                   {entry.transporterName && (
                     <span className="text-zinc-400 truncate">
