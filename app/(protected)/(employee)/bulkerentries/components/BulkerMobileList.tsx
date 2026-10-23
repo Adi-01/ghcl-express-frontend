@@ -95,6 +95,12 @@ export function BulkerMobileList({
           const isEditable =
             !isViewer && onOpenEdit && (canEditEntry ? canEditEntry(entry) : true);
 
+          const customerDisplay = entry.customerName
+            ? entry.salesOrderNumber
+              ? `${entry.customerName} (${entry.salesOrderNumber})`
+              : entry.customerName
+            : "—";
+
           return (
             <div
               key={entry.id}
@@ -109,53 +115,46 @@ export function BulkerMobileList({
                   : "cursor-default"
               )}
             >
-              {/* Top Row: Serial + Bulker No + Prev Trip Info + Status */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-[11px] font-mono font-medium text-zinc-500 shrink-0">
-                    #{serial}
-                  </span>
-                  <span className="font-mono font-bold text-sm text-white truncate tracking-wide">
-                    {entry.bulkerNumber}
-                  </span>
-                  {/* Prev Trip Info Icon (Visible to all roles) */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPrevTrip(entry);
-                    }}
-                    className="p-1 text-zinc-400 hover:text-sky-400 active:text-sky-300 hover:bg-white/10 rounded-md transition-colors shrink-0"
-                    title="View previous trip details"
-                  >
-                    <Info className="w-3.5 h-3.5" />
-                    <span className="sr-only">Previous trip details</span>
-                  </button>
-                </div>
-
-                <div className="shrink-0">
-                  <span
-                    className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border",
-                      statusStyle
-                    )}
-                  >
-                    {entry.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Bottom Row: Customer Name */}
-              <div className="text-xs pt-1.5 border-t border-border/30 text-muted-foreground">
-                <div className="truncate">
-                  {entry.customerName ? (
-                    <span className="text-zinc-200 font-medium truncate block">
-                      {entry.customerName}
+              {/* Row 1: serial number + bulker number + transporter name on left, status on right */}
+              <div className="flex items-center justify-between gap-2 text-xs font-medium">
+                <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
+                  <span className="text-zinc-500 shrink-0">#{serial}</span>
+                  <span className="text-white shrink-0">{entry.bulkerNumber}</span>
+                  {entry.transporterName && (
+                    <span className="text-zinc-400 truncate">
+                      {entry.transporterName}
                     </span>
-                  ) : (
-                    <span className="text-zinc-600 italic">No customer allocated</span>
                   )}
                 </div>
+
+                <span
+                  className={cn(
+                    "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border shrink-0",
+                    statusStyle
+                  )}
+                >
+                  {entry.status}
+                </span>
+              </div>
+
+              {/* Row 2: customername(sonumber) on left, info button on right */}
+              <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-border/30 text-xs font-medium">
+                <span className="truncate text-zinc-300 min-w-0 flex-1">
+                  {customerDisplay}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPrevTrip(entry);
+                  }}
+                  className="p-1 -mr-1 text-zinc-400 hover:text-sky-400 active:text-sky-300 hover:bg-white/10 rounded-md transition-colors shrink-0"
+                  title="View previous trip details"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  <span className="sr-only">Previous trip details</span>
+                </button>
               </div>
             </div>
           );
