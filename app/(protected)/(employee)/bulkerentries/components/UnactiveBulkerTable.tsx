@@ -283,8 +283,6 @@ export function UnactiveBulkerTable() {
           isLoading={isLoading}
           startIndex={(page - 1) * limit}
           canEditEntry={(entry) => entry.status === "OUT"}
-          editIcon="clock"
-          editHintText="Double-tap for Plant Out time"
           onOpenEdit={(entry) => {
             if (entry.status === "OUT") {
               setSelectedEntry(entry);

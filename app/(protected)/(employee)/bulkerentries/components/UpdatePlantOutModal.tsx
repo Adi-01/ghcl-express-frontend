@@ -113,7 +113,10 @@ export function UpdatePlantOutModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-6 bg-[#121316] border-[#22242a] text-[#ffffff] shadow-2xl rounded-lg">
+      <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="sm:max-w-md p-6 bg-[#121316] border-[#22242a] text-[#ffffff] shadow-2xl rounded-lg"
+      >
         <DialogHeader className="mb-2">
           <DialogTitle className="text-lg font-medium tracking-tight text-[#ffffff] flex items-center justify-between">
             <span className="flex items-center gap-2">

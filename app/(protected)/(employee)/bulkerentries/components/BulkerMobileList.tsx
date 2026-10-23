@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Info, Truck, Edit3, Clock } from "lucide-react";
+import { Info, Truck } from "lucide-react";
 import type { BulkerEntry, BulkerStatus } from "@/lib/types/bulker";
 import { PrevTripModal } from "./PrevTripModal";
 import { cn } from "@/lib/utils";
@@ -15,8 +15,6 @@ interface BulkerMobileListProps {
   emptyStateDescription?: string;
   emptyStateAction?: React.ReactNode;
   canEditEntry?: (entry: BulkerEntry) => boolean;
-  editHintText?: string;
-  editIcon?: "edit" | "clock";
   onOpenEdit?: (entry: BulkerEntry) => void;
 }
 
@@ -38,8 +36,6 @@ export function BulkerMobileList({
   emptyStateDescription = "No trucks currently in queue.",
   emptyStateAction,
   canEditEntry,
-  editHintText,
-  editIcon = "edit",
   onOpenEdit,
 }: BulkerMobileListProps) {
   const [selectedPrevTrip, setSelectedPrevTrip] = useState<BulkerEntry | null>(null);
@@ -107,7 +103,7 @@ export function BulkerMobileList({
               }}
               onTouchEnd={() => handleTouchEnd(entry)}
               className={cn(
-                "p-3 bg-[#121316] border border-border/80 rounded-xl transition-colors select-none group space-y-2",
+                "p-3 bg-[#121316] border border-border/80 rounded-xl transition-colors select-none space-y-2",
                 isEditable
                   ? "active:bg-zinc-900/80 cursor-pointer"
                   : "cursor-default"
@@ -137,7 +133,7 @@ export function BulkerMobileList({
                   </button>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="shrink-0">
                   <span
                     className={cn(
                       "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border",
@@ -146,32 +142,12 @@ export function BulkerMobileList({
                   >
                     {entry.status}
                   </span>
-
-                  {/* Mobile Quick Edit trigger button */}
-                  {isEditable && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenEdit?.(entry);
-                      }}
-                      className="p-1 text-zinc-500 hover:text-white rounded transition-colors"
-                      title={editHintText || "Edit bulker"}
-                    >
-                      {editIcon === "clock" ? (
-                        <Clock className="w-3.5 h-3.5" />
-                      ) : (
-                        <Edit3 className="w-3.5 h-3.5" />
-                      )}
-                      <span className="sr-only">Edit bulker</span>
-                    </button>
-                  )}
                 </div>
               </div>
 
               {/* Bottom Row: Customer Name */}
-              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-border/30 text-muted-foreground">
-                <div className="truncate min-w-0 flex-1">
+              <div className="text-xs pt-1.5 border-t border-border/30 text-muted-foreground">
+                <div className="truncate">
                   {entry.customerName ? (
                     <span className="text-zinc-200 font-medium truncate block">
                       {entry.customerName}
@@ -180,12 +156,6 @@ export function BulkerMobileList({
                     <span className="text-zinc-600 italic">No customer allocated</span>
                   )}
                 </div>
-
-                {isEditable && (
-                  <span className="text-[10px] text-zinc-600 font-mono shrink-0 ml-2">
-                    {editHintText || "Double-tap to edit"}
-                  </span>
-                )}
               </div>
             </div>
           );

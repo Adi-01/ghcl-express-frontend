@@ -420,7 +420,10 @@ export function BulkerMobileEditModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#121316] border border-border text-white sm:max-w-md max-h-[90vh] overflow-y-auto p-5 shadow-2xl">
+      <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="bg-[#121316] border border-border text-white sm:max-w-md max-h-[90vh] overflow-y-auto p-5 shadow-2xl"
+      >
         <DialogHeader className="border-b border-border/50 pb-3">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">

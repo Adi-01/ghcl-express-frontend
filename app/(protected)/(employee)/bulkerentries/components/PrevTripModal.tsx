@@ -25,7 +25,10 @@ export function PrevTripModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-[#121316] border border-border text-white sm:max-w-md p-5 shadow-2xl">
+      <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="bg-[#121316] border border-border text-white sm:max-w-md p-5 shadow-2xl"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between border-b border-border/50 pb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
