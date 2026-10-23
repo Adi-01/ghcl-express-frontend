@@ -11,6 +11,7 @@ import {
   FolderSearch,
   ChevronLeftIcon,
   ChevronRightIcon,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -71,6 +72,7 @@ import {
 import { useUpdateBulkerEntryMutation, useDeleteBulkerEntryMutation } from "@/lib/hooks/mutations/useBulkerMutations";
 import { reactQueryFetch } from "@/lib/api/clientFetchers";
 import { cn, formatDateTime } from "@/lib/utils";
+import { PrevTripModal } from "./PrevTripModal";
 
 interface ActiveBulkerSheetProps {
   entries: BulkerEntry[];
@@ -128,7 +130,7 @@ interface BulkerNumberCellProps {
   bulkerInfoList: BulkerInfo[];
   onSelectBulker: (entryId: string, bulker: BulkerInfo) => Promise<void>;
   onCommitManual: (entryId: string, value: string) => Promise<void>;
-  onDoubleClick: () => void;
+  onOpenPrevTrip: () => void;
 }
 
 function BulkerNumberCell({
@@ -137,7 +139,7 @@ function BulkerNumberCell({
   bulkerInfoList,
   onSelectBulker,
   onCommitManual,
-  onDoubleClick,
+  onOpenPrevTrip,
 }: BulkerNumberCellProps) {
   const [val, setVal] = useState(row.bulkerNumber || "");
   const [isOpen, setIsOpen] = useState(false);
@@ -161,12 +163,20 @@ function BulkerNumberCell({
 
   if (isViewer) {
     return (
-      <div
-        onDoubleClick={onDoubleClick}
-        className="w-full h-8 px-2.5 py-1.5 font-mono text-xs font-semibold text-white cursor-pointer select-none truncate flex items-center"
-        title="Double-click to view last trip"
-      >
-        {val || "—"}
+      <div className="w-full h-8 px-2 py-1 font-mono text-xs font-semibold text-white select-none truncate flex items-center justify-between">
+        <span className="truncate">{val || "—"}</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenPrevTrip();
+          }}
+          className="p-1 text-zinc-400 hover:text-sky-400 hover:bg-white/10 rounded transition-colors shrink-0"
+          title="View previous trip details"
+        >
+          <Info className="w-3.5 h-3.5" />
+          <span className="sr-only">Previous trip details</span>
+        </button>
       </div>
     );
   }
@@ -174,11 +184,10 @@ function BulkerNumberCell({
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverAnchor asChild>
-        <div className="relative w-full h-8">
+        <div className="relative flex items-center w-full h-8">
           <input
             type="text"
             value={val}
-            onDoubleClick={onDoubleClick}
             onChange={(e) => {
               setVal(e.target.value.toUpperCase());
               setIsOpen(true);
@@ -213,12 +222,23 @@ function BulkerNumberCell({
               }
             }}
             placeholder="Bulker no..."
-            title="Type to search or double-click to view last trip"
             className={cn(
               SHEET_INPUT_CLASS,
-              "font-mono font-semibold"
+              "font-mono font-semibold pr-7"
             )}
           />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenPrevTrip();
+            }}
+            className="absolute right-1.5 p-1 text-zinc-400 hover:text-sky-400 hover:bg-white/10 rounded transition-colors z-10"
+            title="View previous trip details"
+          >
+            <Info className="w-3.5 h-3.5" />
+            <span className="sr-only">Previous trip details</span>
+          </button>
         </div>
       </PopoverAnchor>
       <PopoverContent
@@ -735,7 +755,7 @@ export function ActiveBulkerSheet({
                       )}
                     </TableCell>
 
-                    {/* Bulker Number Cell (Write In-Cell, Dropdown Suggestions, Double-Click Last Trip) */}
+                    {/* Bulker Number Cell (Write In-Cell, Dropdown Suggestions, Info Icon Last Trip) */}
                     <TableCell className="border-r border-border/30 p-0 text-sm text-foreground overflow-hidden text-ellipsis whitespace-nowrap">
                       <BulkerNumberCell
                         row={row}
@@ -743,7 +763,7 @@ export function ActiveBulkerSheet({
                         bulkerInfoList={bulkerInfoList}
                         onSelectBulker={handleSelectBulker}
                         onCommitManual={(id, val) => handleUpdateField(id, { bulkerNumber: val })}
-                        onDoubleClick={() => setLastTripEntry(row)}
+                        onOpenPrevTrip={() => setLastTripEntry(row)}
                       />
                     </TableCell>
 
@@ -958,81 +978,12 @@ export function ActiveBulkerSheet({
         </div>
       )}
 
-      {/* Last Trip Dialog (Triggered on Bulker Number Double-Click) */}
-      <Dialog
-        open={Boolean(lastTripEntry)}
-        onOpenChange={(open) => !open && setLastTripEntry(null)}
-      >
-        <DialogContent className="bg-[#121316] border border-border text-white sm:max-w-md p-5 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between border-b border-border/50 pb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Truck className="w-4 h-4 text-zinc-400" />
-                Last Trip Details
-              </span>
-              <span className="font-mono text-sm font-bold text-sky-400">
-                {lastTripEntry?.bulkerNumber}
-              </span>
-            </DialogTitle>
-          </DialogHeader>
-
-          {lastTripEntry?.previousTrip ? (
-            <div className="space-y-3 pt-2 text-xs">
-              <div className="bg-black/30 p-3 rounded-lg border border-border/40 space-y-2">
-                <div>
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">
-                    Customer Name
-                  </span>
-                  <div className="font-medium text-white text-sm">
-                    {lastTripEntry.previousTrip.customerName || "—"}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">
-                    Destination
-                  </span>
-                  <div className="text-xs text-zinc-300">
-                    {lastTripEntry.previousTrip.destination || "—"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/30 p-3 rounded-lg border border-border/40">
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">
-                    SO Number
-                  </span>
-                  <span className="font-mono text-sm text-white font-medium">
-                    {lastTripEntry.previousTrip.salesOrderNumber || "—"}
-                  </span>
-                </div>
-
-                <div className="bg-black/30 p-3 rounded-lg border border-border/40">
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">
-                    Departure Date
-                  </span>
-                  <span className="text-xs text-zinc-200">
-                    {lastTripEntry.previousTrip.plantOutAt
-                      ? formatDateTime(lastTripEntry.previousTrip.plantOutAt, "date")
-                      : lastTripEntry.previousTrip.orderDate
-                      ? formatDateTime(lastTripEntry.previousTrip.orderDate, "date")
-                      : "—"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="py-8 text-center text-zinc-400 text-xs">
-              No prior completed trip on record for bulker{" "}
-              <strong className="text-white font-mono">
-                {lastTripEntry?.bulkerNumber}
-              </strong>
-              .
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Last Trip Dialog (Triggered on Bulker Info Icon Click) */}
+      <PrevTripModal
+        isOpen={Boolean(lastTripEntry)}
+        onClose={() => setLastTripEntry(null)}
+        entry={lastTripEntry}
+      />
 
       {/* Confirmation Dialog for Cancel */}
       <AlertDialog

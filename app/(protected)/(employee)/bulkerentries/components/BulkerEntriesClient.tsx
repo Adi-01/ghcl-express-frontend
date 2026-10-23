@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ActiveBulkerSheet } from "./ActiveBulkerSheet";
+import { BulkerMobileList } from "./BulkerMobileList";
 import { UnactiveBulkerTable } from "./UnactiveBulkerTable";
+import { BulkerMobileEditModal } from "./BulkerMobileEditModal";
 
 import { useProfileQuery } from "@/lib/hooks/queries/useProfileQuery";
 import { useBulkerEntriesQuery } from "@/lib/hooks/queries/useBulkerQuery";
@@ -45,6 +47,10 @@ export default function BulkerEntriesClient() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<BulkerEntry | null>(null);
+
+  // Mobile Edit Modal state
+  const [selectedMobileEntry, setSelectedMobileEntry] = useState<BulkerEntry | null>(null);
+  const [isMobileEditOpen, setIsMobileEditOpen] = useState(false);
 
   const queryParams = {
     search: activeSearch || undefined,
@@ -142,46 +148,90 @@ export default function BulkerEntriesClient() {
             </div>
           )}
 
-          {/* Active Queue Sheet Table */}
-          <ActiveBulkerSheet
-            entries={entries}
-            isLoading={isLoading}
-            isViewer={isViewer}
-            isAdmin={false}
-            onOpenStatusModal={(entry) => {
-              setSelectedEntry(entry);
-              setIsStatusOpen(true);
-            }}
-            emptyStateAction={
-              !isViewer && !activeSearch ? (
-                <Button
-                  onClick={() => setIsAddOpen(true)}
-                  className="bg-white text-black hover:bg-zinc-200 text-xs font-medium"
-                >
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Add Bulker
-                </Button>
-              ) : activeSearch ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="text-xs bg-transparent border-border text-white hover:bg-zinc-800"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                  Clear Search
-                </Button>
-              ) : undefined
-            }
-            emptyStateTitle={
-              activeSearch ? "No matching active bulkers found" : "No Active Bulkers Found"
-            }
-            emptyStateDescription={
-              activeSearch
-                ? "No active trucks match your current search. Try clearing the search query."
-                : "No trucks are currently active in the plant or waiting queue."
-            }
-          />
+          {/* Desktop & Tablet Screen: Active Queue Sheet Table */}
+          <div className="hidden md:block">
+            <ActiveBulkerSheet
+              entries={entries}
+              isLoading={isLoading}
+              isViewer={isViewer}
+              isAdmin={false}
+              onOpenStatusModal={(entry) => {
+                setSelectedEntry(entry);
+                setIsStatusOpen(true);
+              }}
+              emptyStateAction={
+                !isViewer && !activeSearch ? (
+                  <Button
+                    onClick={() => setIsAddOpen(true)}
+                    className="bg-white text-black hover:bg-zinc-200 text-xs font-medium"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    Add Bulker
+                  </Button>
+                ) : activeSearch ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    className="text-xs bg-transparent border-border text-white hover:bg-zinc-800"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                    Clear Search
+                  </Button>
+                ) : undefined
+              }
+              emptyStateTitle={
+                activeSearch ? "No matching active bulkers found" : "No Active Bulkers Found"
+              }
+              emptyStateDescription={
+                activeSearch
+                  ? "No active trucks match your current search. Try clearing the search query."
+                  : "No trucks are currently active in the plant or waiting queue."
+              }
+            />
+          </div>
+
+          {/* Mobile Screen: Compact List Pattern */}
+          <div className="md:hidden">
+            <BulkerMobileList
+              entries={entries}
+              isLoading={isLoading}
+              isViewer={isViewer}
+              onOpenEdit={(entry) => {
+                setSelectedMobileEntry(entry);
+                setIsMobileEditOpen(true);
+              }}
+              emptyStateAction={
+                !isViewer && !activeSearch ? (
+                  <Button
+                    onClick={() => setIsAddOpen(true)}
+                    className="bg-white text-black hover:bg-zinc-200 text-xs font-medium"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    Add Bulker
+                  </Button>
+                ) : activeSearch ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    className="text-xs bg-transparent border-border text-white hover:bg-zinc-800"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                    Clear Search
+                  </Button>
+                ) : undefined
+              }
+              emptyStateTitle={
+                activeSearch ? "No matching active bulkers found" : "No Active Bulkers Found"
+              }
+              emptyStateDescription={
+                activeSearch
+                  ? "No active trucks match your current search. Try clearing the search query."
+                  : "No trucks are currently active in the plant or waiting queue."
+              }
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="unactive" className="m-0">
@@ -197,6 +247,13 @@ export default function BulkerEntriesClient() {
         onClose={setIsStatusOpen}
         selectedEntry={selectedEntry}
         isAdmin={false}
+      />
+
+      <BulkerMobileEditModal
+        isOpen={isMobileEditOpen}
+        onClose={setIsMobileEditOpen}
+        entry={selectedMobileEntry}
+        isViewer={isViewer}
       />
     </div>
   );
