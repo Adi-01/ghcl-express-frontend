@@ -430,20 +430,7 @@ export function BulkerMobileEditModal({
               <span className="font-mono text-base font-bold text-white">
                 {entry.bulkerNumber}
               </span>
-              {entry.serialNumber && (
-                <span className="text-[11px] font-mono text-zinc-500">
-                  #{entry.serialNumber}
-                </span>
-              )}
             </div>
-            <span
-              className={cn(
-                "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border",
-                STATUS_COLORS[status] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
-              )}
-            >
-              {status}
-            </span>
           </DialogTitle>
         </DialogHeader>
 
