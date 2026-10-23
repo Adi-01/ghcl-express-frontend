@@ -14,7 +14,6 @@ import type { BulkerEntry, BulkerStatus } from "@/lib/types/bulker";
 import { cn, formatDateTime } from "@/lib/utils";
 import { UpdatePlantOutModal } from "./UpdatePlantOutModal";
 import { BulkerMobileList } from "./BulkerMobileList";
-import { BulkerMobileEditModal } from "./BulkerMobileEditModal";
 import { PrevTripModal } from "./PrevTripModal";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -38,10 +37,6 @@ export function UnactiveBulkerTable() {
 
   // Modal State for Previous Trip Details
   const [selectedPrevTrip, setSelectedPrevTrip] = useState<BulkerEntry | null>(null);
-
-  // Modal State for Mobile Edit
-  const [selectedMobileEntry, setSelectedMobileEntry] = useState<BulkerEntry | null>(null);
-  const [isMobileEditOpen, setIsMobileEditOpen] = useState(false);
 
   const queryParams = {
     page,
@@ -287,9 +282,14 @@ export function UnactiveBulkerTable() {
           entries={entries}
           isLoading={isLoading}
           startIndex={(page - 1) * limit}
+          canEditEntry={(entry) => entry.status === "OUT"}
+          editIcon="clock"
+          editHintText="Double-tap for Plant Out time"
           onOpenEdit={(entry) => {
-            setSelectedMobileEntry(entry);
-            setIsMobileEditOpen(true);
+            if (entry.status === "OUT") {
+              setSelectedEntry(entry);
+              setIsPlantOutOpen(true);
+            }
           }}
           emptyStateTitle={
             activeSearch
@@ -355,12 +355,6 @@ export function UnactiveBulkerTable() {
         isOpen={isPlantOutOpen}
         onClose={setIsPlantOutOpen}
         selectedEntry={selectedEntry}
-      />
-
-      <BulkerMobileEditModal
-        isOpen={isMobileEditOpen}
-        onClose={setIsMobileEditOpen}
-        entry={selectedMobileEntry}
       />
 
       <PrevTripModal

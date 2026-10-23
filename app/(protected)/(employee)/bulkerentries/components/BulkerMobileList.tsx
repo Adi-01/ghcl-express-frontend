@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Info, Truck, Edit3 } from "lucide-react";
+import { Info, Truck, Edit3, Clock } from "lucide-react";
 import type { BulkerEntry, BulkerStatus } from "@/lib/types/bulker";
 import { PrevTripModal } from "./PrevTripModal";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,9 @@ interface BulkerMobileListProps {
   emptyStateTitle?: string;
   emptyStateDescription?: string;
   emptyStateAction?: React.ReactNode;
+  canEditEntry?: (entry: BulkerEntry) => boolean;
+  editHintText?: string;
+  editIcon?: "edit" | "clock";
   onOpenEdit?: (entry: BulkerEntry) => void;
 }
 
@@ -34,12 +37,18 @@ export function BulkerMobileList({
   emptyStateTitle = "No bulkers found",
   emptyStateDescription = "No trucks currently in queue.",
   emptyStateAction,
+  canEditEntry,
+  editHintText,
+  editIcon = "edit",
   onOpenEdit,
 }: BulkerMobileListProps) {
   const [selectedPrevTrip, setSelectedPrevTrip] = useState<BulkerEntry | null>(null);
   const lastTapRef = useRef<Record<string, number>>({});
 
   const handleTouchEnd = (entry: BulkerEntry) => {
+    const isEditable = !isViewer && onOpenEdit && (canEditEntry ? canEditEntry(entry) : true);
+    if (!isEditable) return;
+
     const now = Date.now();
     const last = lastTapRef.current[entry.id] || 0;
     if (now - last < 350) {
@@ -87,13 +96,22 @@ export function BulkerMobileList({
           const statusStyle =
             STATUS_COLORS[entry.status] ||
             "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+          const isEditable =
+            !isViewer && onOpenEdit && (canEditEntry ? canEditEntry(entry) : true);
 
           return (
             <div
               key={entry.id}
-              onDoubleClick={() => onOpenEdit?.(entry)}
+              onDoubleClick={() => {
+                if (isEditable) onOpenEdit?.(entry);
+              }}
               onTouchEnd={() => handleTouchEnd(entry)}
-              className="p-3 bg-[#121316] border border-border/80 rounded-xl active:bg-zinc-900/80 transition-colors select-none group space-y-2"
+              className={cn(
+                "p-3 bg-[#121316] border border-border/80 rounded-xl transition-colors select-none group space-y-2",
+                isEditable
+                  ? "active:bg-zinc-900/80 cursor-pointer"
+                  : "cursor-default"
+              )}
             >
               {/* Top Row: Serial + Bulker No + Prev Trip Info + Status */}
               <div className="flex items-center justify-between gap-2">
@@ -130,17 +148,21 @@ export function BulkerMobileList({
                   </span>
 
                   {/* Mobile Quick Edit trigger button */}
-                  {!isViewer && onOpenEdit && (
+                  {isEditable && (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onOpenEdit(entry);
+                        onOpenEdit?.(entry);
                       }}
                       className="p-1 text-zinc-500 hover:text-white rounded transition-colors"
-                      title="Edit bulker entry"
+                      title={editHintText || "Edit bulker"}
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      {editIcon === "clock" ? (
+                        <Clock className="w-3.5 h-3.5" />
+                      ) : (
+                        <Edit3 className="w-3.5 h-3.5" />
+                      )}
                       <span className="sr-only">Edit bulker</span>
                     </button>
                   )}
@@ -159,9 +181,11 @@ export function BulkerMobileList({
                   )}
                 </div>
 
-                <span className="text-[10px] text-zinc-600 font-mono shrink-0 ml-2">
-                  Double-tap to edit
-                </span>
+                {isEditable && (
+                  <span className="text-[10px] text-zinc-600 font-mono shrink-0 ml-2">
+                    {editHintText || "Double-tap to edit"}
+                  </span>
+                )}
               </div>
             </div>
           );
@@ -177,3 +201,4 @@ export function BulkerMobileList({
     </>
   );
 }
+
