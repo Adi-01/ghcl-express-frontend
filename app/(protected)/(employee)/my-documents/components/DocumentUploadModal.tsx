@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useUploadDocumentMutation } from "@/lib/hooks/mutations/useDocumentMutations";
 import { DocumentType } from "@/lib/types";
 import {
@@ -20,7 +20,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Upload, Loader2, AlertCircle, FileCheck } from "lucide-react";
+import {
+  Attachment,
+  AttachmentMedia,
+  AttachmentContent,
+  AttachmentTitle,
+  AttachmentDescription,
+  AttachmentActions,
+  AttachmentAction,
+  AttachmentTrigger,
+} from "@/components/ui/attachment";
+import { Upload, Loader2, AlertCircle, FileText, X } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "cn";
 
 interface DocumentUploadModalProps {
   open: boolean;
@@ -36,7 +48,7 @@ const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
   { value: "OTHER", label: "Other Official ID" },
 ];
 
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB (1,048,576 bytes)
 const AADHAAR_REGEX = /^\d{12}$/;
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 
@@ -48,10 +60,12 @@ export function DocumentUploadModal({
   const [docNumber, setDocNumber] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadMutation = useUploadDocumentMutation();
 
-  // Instant Validation
+  // Instant Validation for document number
   const getDocNumberError = () => {
     if (!docNumber.trim()) return null;
     const cleanNum = docNumber.trim().toUpperCase();
@@ -64,31 +78,102 @@ export function DocumentUploadModal({
     return null;
   };
 
-  const getFileError = () => {
-    if (!file) return null;
-    const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+  const docNumberError = getDocNumberError();
+  const hasErrors = Boolean(docNumberError);
+
+  const validateAndSetFile = (selectedFile: File) => {
+    setErrorMessage(null);
+
+    // 1. Strict PDF type check
+    const isPdf =
+      selectedFile.type === "application/pdf" ||
+      selectedFile.name.toLowerCase().endsWith(".pdf");
+
     if (!isPdf) {
-      return "Only PDF documents are accepted for KYC verification.";
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setFile(null);
+      toast.error("Only PDF documents are accepted for KYC verification.");
+      setErrorMessage("Only PDF documents are accepted for KYC verification.");
+      return false;
     }
-    if (file.size > MAX_FILE_SIZE) {
-      return `File size (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds the maximum 1 MB limit.`;
+
+    // 2. Strict 1 MB max size check - Deny instantly if > 1 MB
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setFile(null);
+      const sizeMb = (selectedFile.size / (1024 * 1024)).toFixed(2);
+      toast.error(`File size (${sizeMb} MB) exceeds the 1 MB limit. Upload denied.`);
+      setErrorMessage(
+        `File size (${sizeMb} MB) exceeds the maximum allowed limit of 1 MB. Upload denied.`
+      );
+      return false;
     }
-    return null;
+
+    // 3. Reject empty files (0 bytes)
+    if (selectedFile.size === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setFile(null);
+      toast.error("Selected file is empty (0 bytes).");
+      setErrorMessage("File is empty (0 bytes). Please select a valid document.");
+      return false;
+    }
+
+    setFile(selectedFile);
+    return true;
   };
 
-  const docNumberError = getDocNumberError();
-  const fileError = getFileError();
-  const hasErrors = Boolean(docNumberError || fileError);
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setErrorMessage(null);
-    const selected = e.target.files?.[0] || null;
-    setFile(selected);
+    const selected = e.target.files?.[0];
+    if (selected) {
+      validateAndSetFile(selected);
+    }
+  };
+
+  const handleRemoveFile = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploadMutation.isPending) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (uploadMutation.isPending) return;
+
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      validateAndSetFile(droppedFile);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || hasErrors) return;
+    if (!file || hasErrors || uploadMutation.isPending) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File size exceeds 1 MB limit. Upload denied.");
+      setErrorMessage("File size exceeds the maximum allowed limit of 1 MB.");
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
     setErrorMessage(null);
     const formData = new FormData();
@@ -105,6 +190,7 @@ export function DocumentUploadModal({
         setFile(null);
         setDocNumber("");
         setErrorMessage(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         onOpenChange(false);
       },
       onError: (err: any) => {
@@ -121,6 +207,8 @@ export function DocumentUploadModal({
   const handleClose = () => {
     if (uploadMutation.isPending) return;
     setErrorMessage(null);
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     onOpenChange(false);
   };
 
@@ -197,28 +285,96 @@ export function DocumentUploadModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="fileInput" className="text-xs text-muted-foreground">
+            <Label className="text-xs text-muted-foreground">
               PDF Document (Max 1 MB)
             </Label>
-            <Input
+
+            {/* Hidden native input for file selection */}
+            <input
+              ref={fileInputRef}
               id="fileInput"
               type="file"
               accept=".pdf,application/pdf"
               onChange={handleFileChange}
-              required
               disabled={uploadMutation.isPending}
-              className="bg-black/40 border-border text-xs cursor-pointer file:text-white file:border-0 file:bg-zinc-800 file:rounded file:px-2 file:py-1 file:mr-2"
+              className="hidden"
             />
-            {file && !fileError && (
-              <p className="text-xs text-emerald-400 flex items-center gap-1.5 pt-0.5">
-                <FileCheck className="w-3.5 h-3.5" />
-                {file.name} ({(file.size / 1024).toFixed(1)} KB)
-              </p>
-            )}
-            {fileError && (
-              <p className="text-xs text-destructive animate-in fade-in">
-                {fileError}
-              </p>
+
+            {!file ? (
+              <Attachment
+                state="idle"
+                className={cn(
+                  "w-full cursor-pointer flex-row items-center justify-center gap-3 p-5 border-dashed border-border bg-black/20 hover:border-zinc-500 hover:bg-white/[0.02] transition-all select-none rounded-lg",
+                  isDragging && "border-white/60 bg-white/[0.04]",
+                  uploadMutation.isPending && "pointer-events-none opacity-50"
+                )}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <AttachmentTrigger
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadMutation.isPending}
+                  aria-label="Upload PDF document"
+                />
+                <AttachmentMedia
+                  variant="icon"
+                  className="bg-white/5 text-zinc-400 size-9 rounded-lg"
+                >
+                  <Upload className="w-4 h-4" />
+                </AttachmentMedia>
+                <AttachmentContent className="text-left">
+                  <AttachmentTitle className="text-xs font-medium text-zinc-200">
+                    Click to select or drag & drop PDF
+                  </AttachmentTitle>
+                  <AttachmentDescription className="text-[11px] text-muted-foreground">
+                    Strictly max 1 MB • PDF format only
+                  </AttachmentDescription>
+                </AttachmentContent>
+              </Attachment>
+            ) : (
+              <Attachment
+                state={uploadMutation.isPending ? "uploading" : "done"}
+                className="w-full flex-row items-center justify-between p-3 bg-card border-border rounded-lg"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <AttachmentMedia
+                    variant="icon"
+                    className="bg-sky-500/10 text-sky-400 size-9 rounded-lg shrink-0"
+                  >
+                    {uploadMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-sky-400" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-sky-400" />
+                    )}
+                  </AttachmentMedia>
+                  <AttachmentContent className="min-w-0 flex-1">
+                    <AttachmentTitle
+                      className="text-xs font-medium text-white truncate"
+                      title={file.name}
+                    >
+                      {file.name}
+                    </AttachmentTitle>
+                    <AttachmentDescription className="text-[11px] text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB • Ready to upload
+                    </AttachmentDescription>
+                  </AttachmentContent>
+                </div>
+                <AttachmentActions>
+                  <AttachmentAction
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    className="text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md"
+                    onClick={handleRemoveFile}
+                    disabled={uploadMutation.isPending}
+                    title="Remove file"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span className="sr-only">Remove file</span>
+                  </AttachmentAction>
+                </AttachmentActions>
+              </Attachment>
             )}
           </div>
 
