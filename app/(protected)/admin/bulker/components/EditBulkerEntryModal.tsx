@@ -117,9 +117,12 @@ export function EditBulkerEntryModal({
     if (selectedEntry && isOpen) {
       setFormData({
         status: selectedEntry.status,
-        orderDate: selectedEntry.orderDate
-          ? selectedEntry.orderDate.split("T")[0]
-          : "",
+        orderDate:
+          selectedEntry.status === "VRA"
+            ? ""
+            : selectedEntry.orderDate
+            ? selectedEntry.orderDate.split("T")[0]
+            : "",
         bulkerNumber: selectedEntry.bulkerNumber || "",
         transporterName: selectedEntry.transporterName || "",
         permit: selectedEntry.permit || "",
@@ -372,7 +375,7 @@ export function EditBulkerEntryModal({
           customerName: formData.customerName,
           destination: formData.destination,
           remarks: formData.remarks,
-          orderDate: formData.orderDate || null,
+          orderDate: formData.status === "VRA" ? null : (formData.orderDate || null),
           status: isAdmin && !isCancelled ? formData.status : undefined,
           vraInAt:
             isAdmin && formData.vraInAt
@@ -455,6 +458,7 @@ export function EditBulkerEntryModal({
                       status: nextStatus,
                       ...(nextStatus === "VRA"
                         ? {
+                            orderDate: "",
                             customerName: "",
                             destination: "",
                             salesOrderNumber: "",
@@ -504,13 +508,17 @@ export function EditBulkerEntryModal({
                 Order Date
               </label>
               <DatePicker
-                value={formData.orderDate}
+                value={formData.status === "VRA" ? "" : formData.orderDate}
                 onChange={(dateStr) =>
                   setFormData((prev) => ({ ...prev, orderDate: dateStr }))
                 }
-                placeholder="Pick order date"
+                placeholder={
+                  formData.status === "VRA"
+                    ? "Unallocated (N/A for VRA)"
+                    : "Pick order date"
+                }
                 className="w-full bg-[#090a0c] border-[#22242a] text-[#ffffff]"
-                disabled={isCancelled}
+                disabled={isCancelled || formData.status === "VRA"}
               />
             </div>
 

@@ -97,3 +97,48 @@ export interface BulkerEntriesResponse {
   };
 }
 
+export interface CustomerBulkerDetail {
+  id: string;
+  bulkerNumber: string;
+  status: BulkerStatus;
+  salesOrderNumber: string | null;
+  transporterName: string;
+  permit: string;
+  destination: string;
+  orderDate?: string | null;
+  vraInAt?: string | null;
+  allocatedAt?: string | null;
+  plantInAt?: string | null;
+  plantOutAt?: string | null;
+  updatedAt?: string | null;
+  remarks?: string;
+}
+
+export interface CustomerSummaryItem {
+  customerName: string;
+  vraCount: number;
+  allocatedCount: number;
+  sendCount: number;
+  outCount: number;
+  totalCount: number;
+  bulkers: CustomerBulkerDetail[];
+}
+
+export interface BulkerSummaryResponse {
+  summary: CustomerSummaryItem[];
+  totals: {
+    vraCount: number;
+    allocatedCount: number;
+    sendCount: number;
+    outCount: number;
+    totalCount: number;
+  };
+  period: {
+    mode: "date" | "month";
+    value: string;
+    startDate: string;
+    endDate: string;
+  };
+}
+
+

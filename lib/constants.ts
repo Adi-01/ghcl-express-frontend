@@ -62,6 +62,7 @@ export const QUERY_KEYS = {
     all: ["bulker"] as const,
     entries: (params: Record<string, any> = {}) => ["bulker", "entries", params] as const,
     adminLogs: (params: Record<string, any> = {}) => ["bulker", "admin-logs", params] as const,
+    summary: (params: Record<string, any> = {}) => ["bulker", "summary", params] as const,
     bulkerInfo: () => ["bulker", "bulker-info"] as const,
     customerInfo: () => ["bulker", "customer-info"] as const,
   },

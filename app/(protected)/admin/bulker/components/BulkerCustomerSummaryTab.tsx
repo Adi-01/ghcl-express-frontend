@@ -4,11 +4,8 @@ import { useState, useMemo } from "react";
 import {
   Calendar,
   Building2,
-  Search,
-  RotateCcw,
-  BarChart3,
-  ExternalLink,
-  ChevronRight,
+  RefreshCcw,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,22 +25,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableFilterPopover } from "@/components/shared/TableFilterPopover";
 import { cn } from "@/lib/utils";
-import {
-  BulkerCustomerDetailsModal,
-  type DummyCustomerBulker,
-} from "./BulkerCustomerDetailsModal";
-import type { BulkerStatus } from "@/lib/types/bulker";
-
-interface CustomerSummaryRow {
-  customerName: string;
-  vraCount: number;
-  allocatedCount: number;
-  sendCount: number;
-  outCount: number;
-  totalCount: number;
-  bulkers: DummyCustomerBulker[];
-}
+import { useBulkerSummaryQuery } from "@/lib/hooks/queries/useBulkerQuery";
+import type { CustomerSummaryItem } from "@/lib/types/bulker";
+import { BulkerCustomerDetailsModal } from "./BulkerCustomerDetailsModal";
 
 // Helper to get today in IST (YYYY-MM-DD)
 const getTodayIST = (): string => {
@@ -56,7 +42,7 @@ const getTodayIST = (): string => {
   return `${yyyy}-${MM}-${dd}`;
 };
 
-// Helper to get current month (YYYY-MM)
+// Helper to get current month in IST (YYYY-MM)
 const getCurrentMonthIST = (): string => {
   const d = new Date();
   const utc = d.getTime() + d.getTimezoneOffset() * 60000;
@@ -66,412 +52,189 @@ const getCurrentMonthIST = (): string => {
   return `${yyyy}-${MM}`;
 };
 
-// Generates 12 past months for dropdown
-const RECENT_MONTHS = [
-  { value: "2026-10", label: "October 2026" },
-  { value: "2026-09", label: "September 2026" },
-  { value: "2026-08", label: "August 2026" },
-  { value: "2026-07", label: "July 2026" },
-  { value: "2026-06", label: "June 2026" },
-  { value: "2026-05", label: "May 2026" },
-  { value: "2026-04", label: "April 2026" },
-  { value: "2026-03", label: "March 2026" },
-];
+// Dynamically generate the last 12 months in IST
+const RECENT_MONTHS = (() => {
+  const result: { value: string; label: string }[] = [];
+  const d = new Date();
+  const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+  const istDate = new Date(utc + 5.5 * 3600000);
 
-// Rich realistic dummy data representing actual factory dispatches
-const DUMMY_SUMMARY_DATA: CustomerSummaryRow[] = [
-  {
-    customerName: "Borosil Limited",
-    vraCount: 0,
-    allocatedCount: 1,
-    sendCount: 0,
-    outCount: 2,
-    totalCount: 3,
-    bulkers: [
-      {
-        id: "b-1",
-        bulkerNumber: "GJ12AZ1042",
-        status: "ALLOCATED",
-        salesOrderNumber: "204891",
-        transporterName: "Shreeji Logistics",
-        permit: "PM-9812",
-        destination: "Bharuch Plant",
-        orderDate: "2026-10-23T06:30:00.000Z",
-      },
-      {
-        id: "b-2",
-        bulkerNumber: "GJ12BW5591",
-        status: "OUT",
-        salesOrderNumber: "204880",
-        transporterName: "Mahalaxmi Transport",
-        permit: "PM-4412",
-        destination: "Bharuch Plant",
-        orderDate: "2026-10-23T04:15:00.000Z",
-        plantOutAt: "2026-10-23T09:45:00.000Z",
-      },
-      {
-        id: "b-3",
-        bulkerNumber: "GJ01XY8821",
-        status: "OUT",
-        salesOrderNumber: "204875",
-        transporterName: "Shreeji Logistics",
-        permit: "PM-3301",
-        destination: "Bharuch Plant",
-        orderDate: "2026-10-23T03:00:00.000Z",
-        plantOutAt: "2026-10-23T08:20:00.000Z",
-      },
-    ],
-  },
-  {
-    customerName: "Gujarat Guardian Ltd",
-    vraCount: 0,
-    allocatedCount: 2,
-    sendCount: 1,
-    outCount: 4,
-    totalCount: 7,
-    bulkers: [
-      {
-        id: "b-4",
-        bulkerNumber: "GJ12CX2091",
-        status: "ALLOCATED",
-        salesOrderNumber: "204910",
-        transporterName: "Patel Roadways",
-        permit: "PM-7721",
-        destination: "Ankleshwar",
-        orderDate: "2026-10-23T07:10:00.000Z",
-      },
-      {
-        id: "b-5",
-        bulkerNumber: "GJ03AB1144",
-        status: "ALLOCATED",
-        salesOrderNumber: "204911",
-        transporterName: "Patel Roadways",
-        permit: "PM-7722",
-        destination: "Ankleshwar",
-        orderDate: "2026-10-23T07:45:00.000Z",
-      },
-      {
-        id: "b-6",
-        bulkerNumber: "GJ12DY4412",
-        status: "SEND",
-        salesOrderNumber: "204899",
-        transporterName: "Shreeji Logistics",
-        permit: "PM-9844",
-        destination: "Ankleshwar",
-        orderDate: "2026-10-23T05:30:00.000Z",
-      },
-      {
-        id: "b-7",
-        bulkerNumber: "MH04JK9901",
-        status: "OUT",
-        salesOrderNumber: "204860",
-        transporterName: "Jai Bharat Transport",
-        permit: "PM-1299",
-        destination: "Ankleshwar",
-        orderDate: "2026-10-23T02:00:00.000Z",
-        plantOutAt: "2026-10-23T07:30:00.000Z",
-      },
-      {
-        id: "b-8",
-        bulkerNumber: "GJ12EF3309",
-        status: "OUT",
-        salesOrderNumber: "204862",
-        transporterName: "Patel Roadways",
-        permit: "PM-7710",
-        destination: "Ankleshwar",
-        orderDate: "2026-10-23T02:40:00.000Z",
-        plantOutAt: "2026-10-23T08:15:00.000Z",
-      },
-      {
-        id: "b-9",
-        bulkerNumber: "GJ12GH7721",
-        status: "OUT",
-        salesOrderNumber: "204863",
-        transporterName: "Shreeji Logistics",
-        permit: "PM-9820",
-        destination: "Ankleshwar",
-        orderDate: "2026-10-23T03:10:00.000Z",
-        plantOutAt: "2026-10-23T08:50:00.000Z",
-      },
-      {
-        id: "b-10",
-        bulkerNumber: "GJ01MN5502",
-        status: "OUT",
-        salesOrderNumber: "204865",
-        transporterName: "Jai Bharat Transport",
-        permit: "PM-1301",
-        destination: "Ankleshwar",
-        orderDate: "2026-10-23T03:50:00.000Z",
-        plantOutAt: "2026-10-23T09:10:00.000Z",
-      },
-    ],
-  },
-  {
-    customerName: "Saint-Gobain India Pvt Ltd",
-    vraCount: 0,
-    allocatedCount: 0,
-    sendCount: 2,
-    outCount: 3,
-    totalCount: 5,
-    bulkers: [
-      {
-        id: "b-11",
-        bulkerNumber: "TN09QW7712",
-        status: "SEND",
-        salesOrderNumber: "204902",
-        transporterName: "South India Carriers",
-        permit: "PM-6601",
-        destination: "Jhagadia Complex",
-        orderDate: "2026-10-23T06:00:00.000Z",
-      },
-      {
-        id: "b-12",
-        bulkerNumber: "GJ12KL4411",
-        status: "SEND",
-        salesOrderNumber: "204905",
-        transporterName: "Shreeji Logistics",
-        permit: "PM-9850",
-        destination: "Jhagadia Complex",
-        orderDate: "2026-10-23T06:45:00.000Z",
-      },
-      {
-        id: "b-13",
-        bulkerNumber: "GJ12PQ1199",
-        status: "OUT",
-        salesOrderNumber: "204870",
-        transporterName: "Mahalaxmi Transport",
-        permit: "PM-4430",
-        destination: "Jhagadia Complex",
-        orderDate: "2026-10-23T02:15:00.000Z",
-        plantOutAt: "2026-10-23T07:45:00.000Z",
-      },
-      {
-        id: "b-14",
-        bulkerNumber: "TN09AB3341",
-        status: "OUT",
-        salesOrderNumber: "204871",
-        transporterName: "South India Carriers",
-        permit: "PM-6605",
-        destination: "Jhagadia Complex",
-        orderDate: "2026-10-23T03:30:00.000Z",
-        plantOutAt: "2026-10-23T08:40:00.000Z",
-      },
-      {
-        id: "b-15",
-        bulkerNumber: "GJ12RS8801",
-        status: "OUT",
-        salesOrderNumber: "204874",
-        transporterName: "Shreeji Logistics",
-        permit: "PM-9860",
-        destination: "Jhagadia Complex",
-        orderDate: "2026-10-23T04:00:00.000Z",
-        plantOutAt: "2026-10-23T09:20:00.000Z",
-      },
-    ],
-  },
-  {
-    customerName: "Asahi India Glass Ltd (AIS)",
-    vraCount: 0,
-    allocatedCount: 1,
-    sendCount: 0,
-    outCount: 1,
-    totalCount: 2,
-    bulkers: [
-      {
-        id: "b-16",
-        bulkerNumber: "HR55XY1209",
-        status: "ALLOCATED",
-        salesOrderNumber: "204920",
-        transporterName: "Haryana Roadlines",
-        permit: "PM-5510",
-        destination: "Taloja Unit",
-        orderDate: "2026-10-23T08:00:00.000Z",
-      },
-      {
-        id: "b-17",
-        bulkerNumber: "GJ12TU4420",
-        status: "OUT",
-        salesOrderNumber: "204882",
-        transporterName: "Mahalaxmi Transport",
-        permit: "PM-4450",
-        destination: "Taloja Unit",
-        orderDate: "2026-10-23T04:30:00.000Z",
-        plantOutAt: "2026-10-23T10:00:00.000Z",
-      },
-    ],
-  },
-  {
-    customerName: "Gold Plus Glass Industry Ltd",
-    vraCount: 0,
-    allocatedCount: 0,
-    sendCount: 1,
-    outCount: 1,
-    totalCount: 2,
-    bulkers: [
-      {
-        id: "b-18",
-        bulkerNumber: "UP14ZZ9912",
-        status: "SEND",
-        salesOrderNumber: "204918",
-        transporterName: "National Cargo",
-        permit: "PM-8810",
-        destination: "Kala Amb",
-        orderDate: "2026-10-23T07:20:00.000Z",
-      },
-      {
-        id: "b-19",
-        bulkerNumber: "GJ12VW6610",
-        status: "OUT",
-        salesOrderNumber: "204889",
-        transporterName: "Patel Roadways",
-        permit: "PM-7740",
-        destination: "Kala Amb",
-        orderDate: "2026-10-23T05:00:00.000Z",
-        plantOutAt: "2026-10-23T10:15:00.000Z",
-      },
-    ],
-  },
-  {
-    customerName: "Unallocated (VRA Queue)",
-    vraCount: 3,
-    allocatedCount: 0,
-    sendCount: 0,
-    outCount: 0,
-    totalCount: 3,
-    bulkers: [
-      {
-        id: "b-20",
-        bulkerNumber: "GJ12AB9001",
-        status: "VRA",
-        salesOrderNumber: null,
-        transporterName: "Shreeji Logistics",
-        permit: "PM-9890",
-        destination: "Waiting Gate",
-        orderDate: "2026-10-23T08:15:00.000Z",
-      },
-      {
-        id: "b-21",
-        bulkerNumber: "GJ03BC1102",
-        status: "VRA",
-        salesOrderNumber: null,
-        transporterName: "Mahalaxmi Transport",
-        permit: "PM-4480",
-        destination: "Waiting Gate",
-        orderDate: "2026-10-23T08:30:00.000Z",
-      },
-      {
-        id: "b-22",
-        bulkerNumber: "GJ12CD4490",
-        status: "VRA",
-        salesOrderNumber: null,
-        transporterName: "Patel Roadways",
-        permit: "PM-7760",
-        destination: "Waiting Gate",
-        orderDate: "2026-10-23T08:45:00.000Z",
-      },
-    ],
-  },
-];
+  for (let i = 0; i < 12; i++) {
+    const cur = new Date(istDate.getFullYear(), istDate.getMonth() - i, 1);
+    const yyyy = cur.getFullYear();
+    const MM = String(cur.getMonth() + 1).padStart(2, "0");
+    const label = cur.toLocaleString("default", { month: "long", year: "numeric" });
+    result.push({ value: `${yyyy}-${MM}`, label });
+  }
+  return result;
+})();
 
 export function BulkerCustomerSummaryTab() {
   // Mode: "date" vs "month"
   const [mode, setMode] = useState<"date" | "month">("date");
   const [selectedDate, setSelectedDate] = useState<string>(getTodayIST());
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonthIST());
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // Draft filters for TableFilterPopover
+  const [draftMode, setDraftMode] = useState<"date" | "month">("date");
+  const [draftDate, setDraftDate] = useState<string>(getTodayIST());
+  const [draftMonth, setDraftMonth] = useState<string>(getCurrentMonthIST());
+
+  // Search input state
+  const [searchInput, setSearchInput] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
 
   // Drilldown dialog state
-  const [drilldownCustomer, setDrilldownCustomer] = useState<CustomerSummaryRow | null>(null);
+  const [drilldownCustomer, setDrilldownCustomer] = useState<CustomerSummaryItem | null>(null);
 
-  // Filtered rows
-  const filteredData = useMemo(() => {
-    let list = DUMMY_SUMMARY_DATA;
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      list = list.filter((r) => r.customerName.toLowerCase().includes(q));
-    }
-    return list;
-  }, [searchQuery]);
+  // Live Query from Backend via Next.js Route Handler BFF
+  const { data, isLoading, isFetching, refetch } = useBulkerSummaryQuery({
+    mode,
+    date: mode === "date" ? selectedDate : undefined,
+    month: mode === "month" ? selectedMonth : undefined,
+    search: activeSearch.trim() || undefined,
+  });
 
-  // Aggregate Totals
-  const totals = useMemo(() => {
-    return filteredData.reduce(
-      (acc, r) => ({
-        vra: acc.vra + r.vraCount,
-        allocated: acc.allocated + r.allocatedCount,
-        send: acc.send + r.sendCount,
-        out: acc.out + r.outCount,
-        total: acc.total + r.totalCount,
-      }),
-      { vra: 0, allocated: 0, send: 0, out: 0, total: 0 }
-    );
-  }, [filteredData]);
+  const summaryRows = useMemo(() => data?.summary || [], [data]);
+  const totals = useMemo(
+    () =>
+      data?.totals || {
+        vraCount: 0,
+        allocatedCount: 0,
+        sendCount: 0,
+        outCount: 0,
+        totalCount: 0,
+      },
+    [data]
+  );
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setActiveSearch(searchInput);
+  };
+
+  const handleApplyFilters = () => {
+    setMode(draftMode);
+    setSelectedDate(draftDate);
+    setSelectedMonth(draftMonth);
+  };
+
+  const handleResetFilters = () => {
+    setDraftMode("date");
+    setDraftDate(getTodayIST());
+    setDraftMonth(getCurrentMonthIST());
+    setMode("date");
+    setSelectedDate(getTodayIST());
+    setSelectedMonth(getCurrentMonthIST());
+    setSearchInput("");
+    setActiveSearch("");
+  };
+
+  const handleRefresh = () => {
+    setSearchInput("");
+    setActiveSearch("");
+    refetch();
+  };
+
+  // Active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (mode === "month") count++;
+    if (mode === "date" && selectedDate !== getTodayIST()) count++;
+    return count;
+  }, [mode, selectedDate]);
 
   const activePeriodLabel =
     mode === "date"
       ? selectedDate || getTodayIST()
       : RECENT_MONTHS.find((m) => m.value === selectedMonth)?.label || selectedMonth;
 
-  return (
-    <div className="space-y-4">
-      {/* Top Filter & Mode Selection Bar */}
-      <div className="p-4 bg-[#121316] border border-border rounded-xl space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Mode Switcher Buttons */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground mr-1">View Mode:</span>
-            <div className="inline-flex rounded-lg bg-black/40 p-1 border border-border/80">
-              <button
-                type="button"
-                onClick={() => setMode("date")}
-                className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                  mode === "date"
-                    ? "bg-white text-black shadow-sm"
-                    : "text-zinc-400 hover:text-white"
-                )}
-              >
-                Datewise (Daily)
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("month")}
-                className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                  mode === "month"
-                    ? "bg-white text-black shadow-sm"
-                    : "text-zinc-400 hover:text-white"
-                )}
-              >
-                Monthwise (Monthly)
-              </button>
-            </div>
-          </div>
+  const isFiltered = Boolean(activeSearch || activeFiltersCount > 0);
 
-          {/* Date / Month Selectors */}
-          <div className="flex flex-wrap items-center gap-2">
-            {mode === "date" ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Select Day:</span>
+  return (
+    <div className="space-y-4 animate-in fade-in duration-300">
+      {/* Search and Toolbar - Matches AdminTable exactly */}
+      <div className="flex flex-wrap items-center justify-start gap-2">
+        {/* 1. Search Form */}
+        <form onSubmit={handleSearchSubmit} className="w-56 shrink-0">
+          <Input
+            placeholder="Search customer name..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="bg-black/40 border-border text-white text-xs h-9 w-full"
+          />
+        </form>
+
+        {/* 2. Refresh Button (Icon-only per design standard) */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleRefresh}
+          title="Refresh"
+          className="shrink-0 bg-black/40 border-border h-9 w-9 text-muted-foreground hover:text-white"
+        >
+          <RefreshCcw className={cn("w-4 h-4", isFetching && "animate-spin")} />
+          <span className="sr-only">Refresh</span>
+        </Button>
+
+        {/* 3. Filters Popover (Standard TableFilterPopover) */}
+        <TableFilterPopover
+          title="Filter Summary"
+          activeCount={activeFiltersCount}
+          onReset={handleResetFilters}
+          onApply={handleApplyFilters}
+        >
+          <div className="space-y-4">
+            {/* View Mode Toggle */}
+            <div className="space-y-1.5 flex flex-col">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Summary View
+              </label>
+              <Select
+                value={draftMode}
+                onValueChange={(val) => setDraftMode(val as "date" | "month")}
+              >
+                <SelectTrigger className="w-full bg-black/40 border-border text-white text-xs h-9">
+                  <SelectValue placeholder="Select mode" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#121316] border border-border text-white">
+                  <SelectItem value="date" className="text-xs">
+                    Datewise (Daily)
+                  </SelectItem>
+                  <SelectItem value="month" className="text-xs">
+                    Monthwise (Monthly)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Picker if Datewise */}
+            {draftMode === "date" ? (
+              <div className="space-y-1.5 flex flex-col">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Dispatch Date (IST)
+                </label>
                 <DatePicker
-                  value={selectedDate}
-                  onChange={(val) => setSelectedDate(val || getTodayIST())}
+                  value={draftDate}
+                  onChange={(val) => setDraftDate(val || getTodayIST())}
                   clearable={false}
                   placeholder="Select Date"
-                  className="w-44 bg-black/40 border-border text-white text-xs h-9"
+                  className="w-full"
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Select Month:</span>
+              <div className="space-y-1.5 flex flex-col">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Dispatch Month
+                </label>
                 <Select
-                  value={selectedMonth}
-                  onValueChange={(val) => setSelectedMonth(val)}
+                  value={draftMonth}
+                  onValueChange={(val) => setDraftMonth(val)}
                 >
-                  <SelectTrigger className="w-44 bg-black/40 border-border text-white text-xs h-9">
+                  <SelectTrigger className="w-full bg-black/40 border-border text-white text-xs h-9">
                     <SelectValue placeholder="Choose Month" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#121316] border-border text-white">
+                  <SelectContent className="bg-[#121316] border border-border text-white">
                     {RECENT_MONTHS.map((m) => (
                       <SelectItem key={m.value} value={m.value} className="text-xs">
                         {m.label}
@@ -482,216 +245,281 @@ export function BulkerCustomerSummaryTab() {
               </div>
             )}
           </div>
-        </div>
+        </TableFilterPopover>
 
-        {/* Search bar & quick summary indicators */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-border/40">
-          <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-2.5" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search customer name..."
-              className="pl-8 bg-black/40 border-border text-white text-xs h-8 w-full"
-            />
-          </div>
-
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>{filteredData.length} Customers</span>
-            </span>
-            <span>•</span>
-            <span className="text-zinc-300 font-mono font-medium">
-              {totals.total} Total Dispatches
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedDate(getTodayIST());
-                setSelectedMonth(getCurrentMonthIST());
-              }}
-              title="Reset Filters"
-              className="w-8 h-8 p-0 bg-black/40 border-border text-zinc-400 hover:text-white"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span className="sr-only">Reset Filters</span>
-            </Button>
-          </div>
+        {/* 4. Active Period Indicator Pill on Toolbar */}
+        <div className="flex items-center gap-1.5 px-3 h-9 rounded-md border border-border/60 bg-black/40 text-xs text-muted-foreground font-mono">
+          <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+          <span className="text-white font-medium">{activePeriodLabel}</span>
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider">
+            ({mode === "date" ? "Daily" : "Monthly"})
+          </span>
         </div>
       </div>
 
-      {/* Summary Table */}
-      <div className="bg-[#121316] border border-border rounded-xl overflow-hidden shadow-xl">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-b border-border/60 hover:bg-transparent bg-black/20">
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 pl-4 w-[35%]">
-                Customer Name
-              </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center w-[12%]">
-                <span className="text-emerald-400">VRA</span>
-              </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center w-[12%]">
-                <span className="text-sky-400">Allocated</span>
-              </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center w-[12%]">
-                <span className="text-purple-400">Send (Plant)</span>
-              </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center w-[12%]">
-                <span className="text-zinc-400">Out</span>
-              </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center pr-4 w-[17%]">
-                Total Bulkers
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {filteredData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-12 text-center text-zinc-500 text-xs">
-                  No customer dispatch records found for this period.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredData.map((row, idx) => {
-                const isUnallocated = row.customerName.includes("Unallocated");
-
-                return (
-                  <TableRow
-                    key={row.customerName || idx}
-                    className="border-b border-border/40 hover:bg-white/[0.03] transition-colors"
+      {/* Main Table or Loading or Empty State - Exactly replicating AdminTable styling */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-28 bg-[#121316] border border-border/60 rounded-xl shadow-sm">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mb-3" />
+          <p className="text-xs text-muted-foreground font-medium">Loading summary...</p>
+        </div>
+      ) : summaryRows.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center px-4 bg-[#121316] border border-border/60 rounded-xl">
+          <div className="mb-3 opacity-60">
+            <Building2 className="w-10 h-10 text-muted-foreground/60" />
+          </div>
+          <p className="text-sm font-medium text-white">
+            {isFiltered ? "No Matching Customers" : "No Customer Summary Data"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+            {isFiltered
+              ? "No customers match your active search query or period filter."
+              : "No customer dispatch records found for this selected period."}
+          </p>
+          {isFiltered && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFilters}
+              className="mt-4 border-border text-xs text-white hover:bg-zinc-800"
+            >
+              Reset Filters
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="w-full bg-[#121316] border border-border/60 rounded-xl overflow-hidden shadow-sm animate-in fade-in duration-300">
+          <div className="w-full overflow-x-auto no-scrollbar">
+            <Table className="w-full min-w-full table-fixed border-collapse">
+              <TableHeader className="bg-black/30 border-b border-border/60">
+                <TableRow className="hover:bg-transparent border-b border-border/40">
+                  <TableHead
+                    className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                    style={{ width: "50px", minWidth: "50px", maxWidth: "50px" }}
                   >
-                    {/* Customer Name */}
-                    <TableCell className="py-3 pl-4">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-zinc-500 shrink-0" />
+                    Sr.
+                  </TableHead>
+                  <TableHead
+                    className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap"
+                    style={{ width: "260px", minWidth: "260px", maxWidth: "260px" }}
+                  >
+                    Customer Name
+                  </TableHead>
+                  <TableHead
+                    className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                    style={{ width: "90px", minWidth: "90px", maxWidth: "90px" }}
+                  >
+                    <span className="text-sky-400">VRA</span>
+                  </TableHead>
+                  <TableHead
+                    className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                    style={{ width: "110px", minWidth: "110px", maxWidth: "110px" }}
+                  >
+                    <span className="text-amber-400">ALLOCATED</span>
+                  </TableHead>
+                  <TableHead
+                    className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                    style={{ width: "90px", minWidth: "90px", maxWidth: "90px" }}
+                  >
+                    <span className="text-emerald-400">SEND</span>
+                  </TableHead>
+                  <TableHead
+                    className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                    style={{ width: "90px", minWidth: "90px", maxWidth: "90px" }}
+                  >
+                    <span className="text-zinc-400">OUT</span>
+                  </TableHead>
+                  <TableHead
+                    className="text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                    style={{ width: "110px", minWidth: "110px", maxWidth: "110px" }}
+                  >
+                    TOTAL
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {summaryRows.map((row, idx) => {
+                  const isUnallocated = row.customerName.includes("Unallocated");
+
+                  return (
+                    <TableRow
+                      key={row.customerName || idx}
+                      className="hover:bg-white/[0.02] border-b border-border/30 transition-colors"
+                    >
+                      {/* Sr. */}
+                      <TableCell
+                        className="border-r border-border/20 py-2.5 px-3 font-mono text-xs text-muted-foreground text-center"
+                        style={{ width: "50px", minWidth: "50px", maxWidth: "50px" }}
+                      >
+                        {String(idx + 1).padStart(2, "0")}
+                      </TableCell>
+
+                      {/* Customer Name */}
+                      <TableCell
+                        className="border-r border-border/20 py-2.5 px-3"
+                        style={{ width: "260px", minWidth: "260px", maxWidth: "260px" }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                          <span
+                            className={cn(
+                              "font-medium text-xs truncate block max-w-[220px]",
+                              isUnallocated ? "text-amber-400 italic" : "text-white"
+                            )}
+                            title={row.customerName}
+                          >
+                            {row.customerName}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* VRA */}
+                      <TableCell
+                        className="border-r border-border/20 py-2.5 px-3 text-center"
+                        style={{ width: "90px", minWidth: "90px", maxWidth: "90px" }}
+                      >
                         <span
                           className={cn(
-                            "font-medium text-xs truncate max-w-xs",
-                            isUnallocated ? "text-amber-400 italic" : "text-white"
+                            "inline-block min-w-6 text-xs font-mono font-medium py-0.5 rounded text-center",
+                            row.vraCount > 0
+                              ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                              : "text-zinc-600"
                           )}
                         >
-                          {row.customerName}
+                          {row.vraCount}
                         </span>
-                      </div>
-                    </TableCell>
+                      </TableCell>
 
-                    {/* VRA Count */}
-                    <TableCell className="py-3 text-center">
-                      <span
-                        className={cn(
-                          "inline-block min-w-7 text-xs font-mono font-medium py-0.5 rounded",
-                          row.vraCount > 0
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            : "text-zinc-600"
-                        )}
+                      {/* ALLOCATED */}
+                      <TableCell
+                        className="border-r border-border/20 py-2.5 px-3 text-center"
+                        style={{ width: "110px", minWidth: "110px", maxWidth: "110px" }}
                       >
-                        {row.vraCount}
-                      </span>
-                    </TableCell>
+                        <span
+                          className={cn(
+                            "inline-block min-w-6 text-xs font-mono font-medium py-0.5 rounded text-center",
+                            row.allocatedCount > 0
+                              ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                              : "text-zinc-600"
+                          )}
+                        >
+                          {row.allocatedCount}
+                        </span>
+                      </TableCell>
 
-                    {/* ALLOCATED Count */}
-                    <TableCell className="py-3 text-center">
-                      <span
-                        className={cn(
-                          "inline-block min-w-7 text-xs font-mono font-medium py-0.5 rounded",
-                          row.allocatedCount > 0
-                            ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
-                            : "text-zinc-600"
-                        )}
+                      {/* SEND */}
+                      <TableCell
+                        className="border-r border-border/20 py-2.5 px-3 text-center"
+                        style={{ width: "90px", minWidth: "90px", maxWidth: "90px" }}
                       >
-                        {row.allocatedCount}
-                      </span>
-                    </TableCell>
+                        <span
+                          className={cn(
+                            "inline-block min-w-6 text-xs font-mono font-medium py-0.5 rounded text-center",
+                            row.sendCount > 0
+                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                              : "text-zinc-600"
+                          )}
+                        >
+                          {row.sendCount}
+                        </span>
+                      </TableCell>
 
-                    {/* SEND Count */}
-                    <TableCell className="py-3 text-center">
-                      <span
-                        className={cn(
-                          "inline-block min-w-7 text-xs font-mono font-medium py-0.5 rounded",
-                          row.sendCount > 0
-                            ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                            : "text-zinc-600"
-                        )}
+                      {/* OUT */}
+                      <TableCell
+                        className="border-r border-border/20 py-2.5 px-3 text-center"
+                        style={{ width: "90px", minWidth: "90px", maxWidth: "90px" }}
                       >
-                        {row.sendCount}
-                      </span>
-                    </TableCell>
+                        <span
+                          className={cn(
+                            "inline-block min-w-6 text-xs font-mono font-medium py-0.5 rounded text-center",
+                            row.outCount > 0
+                              ? "bg-zinc-500/10 text-zinc-300 border border-zinc-500/20"
+                              : "text-zinc-600"
+                          )}
+                        >
+                          {row.outCount}
+                        </span>
+                      </TableCell>
 
-                    {/* OUT Count */}
-                    <TableCell className="py-3 text-center">
-                      <span
-                        className={cn(
-                          "inline-block min-w-7 text-xs font-mono font-medium py-0.5 rounded",
-                          row.outCount > 0
-                            ? "bg-zinc-500/10 text-zinc-300 border border-zinc-500/20"
-                            : "text-zinc-600"
-                        )}
+                      {/* Interactive TOTAL */}
+                      <TableCell
+                        className="py-2.5 px-3 text-center"
+                        style={{ width: "110px", minWidth: "110px", maxWidth: "110px" }}
                       >
-                        {row.outCount}
-                      </span>
-                    </TableCell>
+                        <button
+                          type="button"
+                          onClick={() => setDrilldownCustomer(row)}
+                          disabled={row.totalCount === 0}
+                          title={`View ${row.totalCount} bulkers for ${row.customerName}`}
+                          className={cn(
+                            "inline-flex items-center justify-center px-2.5 py-0.5 rounded text-xs font-mono font-bold transition-all border",
+                            row.totalCount > 0
+                              ? "bg-white/10 hover:bg-white hover:text-black border-white/20 text-white cursor-pointer active:scale-95 shadow-sm"
+                              : "bg-zinc-900 border-zinc-800 text-zinc-600 cursor-not-allowed"
+                          )}
+                        >
+                          {row.totalCount}
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
 
-                    {/* Interactive TOTAL Count: Click to open dialog */}
-                    <TableCell className="py-3 pr-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => setDrilldownCustomer(row)}
-                        disabled={row.totalCount === 0}
-                        title={`View ${row.totalCount} assigned bulkers for ${row.customerName}`}
-                        className={cn(
-                          "inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-bold transition-all shadow-sm",
-                          row.totalCount > 0
-                            ? "bg-white/10 hover:bg-white hover:text-black text-white cursor-pointer active:scale-95"
-                            : "bg-zinc-900 text-zinc-600 cursor-not-allowed"
-                        )}
-                      >
-                        <span>{row.totalCount}</span>
-                        {row.totalCount > 0 && (
-                          <ChevronRight className="w-3 h-3 text-zinc-400 group-hover:text-black" />
-                        )}
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
+                {/* Grand Summary Footer Row */}
+                <TableRow className="bg-black/50 border-t-2 border-border/80 font-bold hover:bg-black/50">
+                  <TableCell
+                    colSpan={2}
+                    className="border-r border-border/20 py-3 px-3 text-xs font-semibold text-white tracking-wide uppercase"
+                  >
+                    Total Dispatches
+                  </TableCell>
+                  <TableCell
+                    className="border-r border-border/20 py-3 px-3 text-center text-xs font-mono text-sky-400 font-bold"
+                  >
+                    {totals.vraCount}
+                  </TableCell>
+                  <TableCell
+                    className="border-r border-border/20 py-3 px-3 text-center text-xs font-mono text-amber-400 font-bold"
+                  >
+                    {totals.allocatedCount}
+                  </TableCell>
+                  <TableCell
+                    className="border-r border-border/20 py-3 px-3 text-center text-xs font-mono text-emerald-400 font-bold"
+                  >
+                    {totals.sendCount}
+                  </TableCell>
+                  <TableCell
+                    className="border-r border-border/20 py-3 px-3 text-center text-xs font-mono text-zinc-300 font-bold"
+                  >
+                    {totals.outCount}
+                  </TableCell>
+                  <TableCell className="py-3 px-3 text-center">
+                    <span className="inline-block px-3 py-1 rounded bg-white text-black font-mono font-bold text-xs shadow-sm">
+                      {totals.totalCount}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
 
-            {/* Grand Summary Footer Row */}
-            {filteredData.length > 0 && (
-              <TableRow className="bg-black/50 border-t-2 border-border/80 font-bold">
-                <TableCell className="py-3.5 pl-4 text-xs font-semibold text-white tracking-wide uppercase">
-                  Total Dispatches
-                </TableCell>
-                <TableCell className="py-3.5 text-center text-xs font-mono text-emerald-400">
-                  {totals.vra}
-                </TableCell>
-                <TableCell className="py-3.5 text-center text-xs font-mono text-sky-400">
-                  {totals.allocated}
-                </TableCell>
-                <TableCell className="py-3.5 text-center text-xs font-mono text-purple-400">
-                  {totals.send}
-                </TableCell>
-                <TableCell className="py-3.5 text-center text-xs font-mono text-zinc-300">
-                  {totals.out}
-                </TableCell>
-                <TableCell className="py-3.5 pr-4 text-center">
-                  <span className="inline-block px-3 py-1 rounded-md bg-white text-black font-mono font-bold text-xs">
-                    {totals.total}
-                  </span>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Footer count indicator matching AdminTable */}
+      {summaryRows.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 py-1 px-1 text-xs text-muted-foreground">
+          <div>
+            Showing <span className="font-medium text-white">{summaryRows.length}</span> {summaryRows.length === 1 ? "customer" : "customers"}
+          </div>
+          <div className="flex items-center gap-2">
+            <span>Aggregate Period Total:</span>
+            <span className="font-mono font-bold text-white">{totals.totalCount}</span>
+          </div>
+        </div>
+      )}
 
-      {/* Drill-down Dialog */}
+      {/* Customer Drill-Down Modal (Card layout preserved with lifecycle timestamps) */}
       {drilldownCustomer && (
         <BulkerCustomerDetailsModal
           isOpen={Boolean(drilldownCustomer)}

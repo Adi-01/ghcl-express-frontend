@@ -5,6 +5,7 @@ import type {
   BulkerEntriesResponse,
   BulkerInfo,
   CustomerInfo,
+  BulkerSummaryResponse,
 } from "@/lib/types/bulker";
 
 export interface BulkerQueryParams {
@@ -113,4 +114,36 @@ export function useCustomerLatestSOQuery(customerName: string) {
     enabled: Boolean(customerName && customerName.trim().length > 0),
   });
 }
+
+export interface BulkerSummaryQueryParams {
+  mode: "date" | "month";
+  date?: string;
+  month?: string;
+  search?: string;
+}
+
+/**
+ * Hook to fetch Customer Bulker Dispatch Summary aggregated by customer name
+ * and statuses (VRA, ALLOCATED, SEND, OUT, TOTAL) for date or month.
+ */
+export function useBulkerSummaryQuery(params: BulkerSummaryQueryParams) {
+  const queryParams = new URLSearchParams();
+  queryParams.set("mode", params.mode);
+  if (params.date) queryParams.set("date", params.date);
+  if (params.month) queryParams.set("month", params.month);
+  if (params.search) queryParams.set("search", params.search);
+
+  const queryString = queryParams.toString();
+
+  return useQuery<BulkerSummaryResponse>({
+    queryKey: QUERY_KEYS.bulker.summary(params),
+    queryFn: () =>
+      reactQueryFetch<BulkerSummaryResponse>(
+        `/api/admin/bulkerdispatch/summary?${queryString}`
+      ),
+    placeholderData: (prev) => prev,
+    refetchInterval: false,
+  });
+}
+
 
