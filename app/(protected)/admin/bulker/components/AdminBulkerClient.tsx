@@ -7,6 +7,7 @@ import {
   Truck,
   Building2,
   ClipboardList,
+  BarChart3,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -34,10 +35,11 @@ import type { BulkerInfo, CustomerInfo } from "@/lib/types/bulker";
 import { BulkerInfoModal } from "./BulkerInfoModal";
 import { CustomerInfoModal } from "./CustomerInfoModal";
 import { BulkerAuditLogsTab } from "./BulkerAuditLogsTab";
+import { BulkerCustomerSummaryTab } from "./BulkerCustomerSummaryTab";
 import { cn, formatDateTime } from "@/lib/utils";
 
 export function AdminBulkerClient() {
-  const [activeTab, setActiveTab] = useState<"dispatches" | "bulker" | "customer">("dispatches");
+  const [activeTab, setActiveTab] = useState<"dispatches" | "summary" | "bulker" | "customer">("dispatches");
 
   // Filters & Search for Bulker tab
   const [bulkerSearch, setBulkerSearch] = useState("");
@@ -277,7 +279,7 @@ export function AdminBulkerClient() {
       <Tabs
         value={activeTab}
         onValueChange={(val) => {
-          setActiveTab(val as "dispatches" | "bulker" | "customer");
+          setActiveTab(val as "dispatches" | "summary" | "bulker" | "customer");
         }}
         className="w-full space-y-4"
       >
@@ -288,27 +290,37 @@ export function AdminBulkerClient() {
               className="text-xs px-4 py-1.5 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-muted-foreground flex items-center gap-1.5"
             >
               <ClipboardList className="w-3.5 h-3.5" />
-              
+              Dispatch Logs
+            </TabsTrigger>
+            <TabsTrigger
+              value="summary"
+              className="text-xs px-4 py-1.5 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-muted-foreground flex items-center gap-1.5"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              Customer Summary
             </TabsTrigger>
             <TabsTrigger
               value="bulker"
               className="text-xs px-4 py-1.5 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-muted-foreground flex items-center gap-1.5"
             >
               <Truck className="w-3.5 h-3.5" />
-              
+              Bulkers
             </TabsTrigger>
             <TabsTrigger
               value="customer"
               className="text-xs px-4 py-1.5 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-muted-foreground flex items-center gap-1.5"
             >
               <Building2 className="w-3.5 h-3.5" />
-              
+              Customers
             </TabsTrigger>
           </TabsList>
         </div>
 
         {/* Tab 1: Dispatch Audit Logs */}
         {activeTab === "dispatches" && <BulkerAuditLogsTab />}
+
+        {/* Tab 2: Customer Summary (Datewise & Monthwise) */}
+        {activeTab === "summary" && <BulkerCustomerSummaryTab />}
 
         {/* Tab 2: Bulker Master */}
         {activeTab === "bulker" && (
