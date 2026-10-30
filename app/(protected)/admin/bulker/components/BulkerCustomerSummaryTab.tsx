@@ -272,14 +272,14 @@ export function BulkerCustomerSummaryTab() {
                 <TableHeader className="bg-black/30 border-b border-border/60">
                   <TableRow className="hover:bg-transparent border-b border-border/40">
                     <TableHead
-                      className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
-                      style={{ width: "50px", minWidth: "50px", maxWidth: "50px" }}
+                      className="sticky left-0 z-30 bg-[#121316] border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-2 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                      style={{ width: "48px", minWidth: "48px", maxWidth: "48px" }}
                     >
                       Sr.
                     </TableHead>
                     <TableHead
-                      className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap"
-                      style={{ width: "260px", minWidth: "260px", maxWidth: "260px" }}
+                      className="sticky left-[48px] z-30 bg-[#121316] border-r border-border/40 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap"
+                      style={{ width: "170px", minWidth: "170px", maxWidth: "170px" }}
                     >
                       Customer Name
                     </TableHead>
@@ -323,26 +323,26 @@ export function BulkerCustomerSummaryTab() {
                     return (
                       <TableRow
                         key={row.customerName || idx}
-                        className="hover:bg-white/[0.02] border-b border-border/30 transition-colors"
+                        className="group hover:bg-white/[0.02] border-b border-border/30 transition-colors"
                       >
                         {/* Sr. */}
                         <TableCell
-                          className="border-r border-border/20 py-2.5 px-3 font-mono text-xs text-muted-foreground text-center"
-                          style={{ width: "50px", minWidth: "50px", maxWidth: "50px" }}
+                          className="sticky left-0 z-20 bg-[#121316] group-hover:bg-[#18191d] border-r border-border/20 py-2.5 px-2 font-mono text-xs text-muted-foreground text-center"
+                          style={{ width: "48px", minWidth: "48px", maxWidth: "48px" }}
                         >
                           {String(idx + 1).padStart(2, "0")}
                         </TableCell>
 
                         {/* Customer Name */}
                         <TableCell
-                          className="border-r border-border/20 py-2.5 px-3"
-                          style={{ width: "260px", minWidth: "260px", maxWidth: "260px" }}
+                          className="sticky left-[48px] z-20 bg-[#121316] group-hover:bg-[#18191d] border-r border-border/40 py-2.5 px-3"
+                          style={{ width: "170px", minWidth: "170px", maxWidth: "170px" }}
                         >
                           <div className="flex items-center gap-2">
                             <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                             <span
                               className={cn(
-                                "font-medium text-xs truncate block max-w-[220px]",
+                                "font-medium text-xs truncate block max-w-[130px]",
                                 isUnallocated ? "text-amber-400 italic" : "text-white"
                               )}
                               title={row.customerName}
@@ -453,7 +453,8 @@ export function BulkerCustomerSummaryTab() {
                   <TableRow className="bg-black/50 border-t-2 border-border/80 font-bold hover:bg-black/50">
                     <TableCell
                       colSpan={2}
-                      className="border-r border-border/20 py-3 px-3 text-xs font-semibold text-white tracking-wide uppercase"
+                      className="sticky left-0 z-20 bg-[#101114] border-r border-border/40 py-3 px-3 text-xs font-semibold text-white tracking-wide uppercase"
+                      style={{ width: "218px", minWidth: "218px", maxWidth: "218px" }}
                     >
                       Total Active Dispatches
                     </TableCell>
@@ -517,14 +518,14 @@ export function BulkerCustomerSummaryTab() {
                 <TableHeader className="bg-black/30 border-b border-border/60">
                   <TableRow className="hover:bg-transparent border-b border-border/40">
                     <TableHead
-                      className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
-                      style={{ width: "50px", minWidth: "50px", maxWidth: "50px" }}
+                      className="sticky left-0 z-30 bg-[#121316] border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-2 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                      style={{ width: "48px", minWidth: "48px", maxWidth: "48px" }}
                     >
                       Sr.
                     </TableHead>
                     <TableHead
-                      className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap"
-                      style={{ width: "240px", minWidth: "220px", maxWidth: "300px" }}
+                      className="sticky left-[48px] z-30 bg-[#121316] border-r border-border/40 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap"
+                      style={{ width: "170px", minWidth: "170px", maxWidth: "170px" }}
                     >
                       Customer
                     </TableHead>
@@ -560,26 +561,26 @@ export function BulkerCustomerSummaryTab() {
                     return (
                       <TableRow
                         key={row.customerName || idx}
-                        className="hover:bg-white/[0.02] border-b border-border/30 transition-colors"
+                        className="group hover:bg-white/[0.02] border-b border-border/30 transition-colors"
                       >
                         {/* Sr. */}
                         <TableCell
-                          className="border-r border-border/20 py-2.5 px-3 font-mono text-xs text-muted-foreground text-center"
-                          style={{ width: "50px", minWidth: "50px", maxWidth: "50px" }}
+                          className="sticky left-0 z-20 bg-[#121316] group-hover:bg-[#18191d] border-r border-border/20 py-2.5 px-2 font-mono text-xs text-muted-foreground text-center"
+                          style={{ width: "48px", minWidth: "48px", maxWidth: "48px" }}
                         >
                           {String(idx + 1).padStart(2, "0")}
                         </TableCell>
 
                         {/* Customer */}
                         <TableCell
-                          className="border-r border-border/20 py-2.5 px-3"
-                          style={{ width: "240px", minWidth: "220px", maxWidth: "300px" }}
+                          className="sticky left-[48px] z-20 bg-[#121316] group-hover:bg-[#18191d] border-r border-border/40 py-2.5 px-3"
+                          style={{ width: "170px", minWidth: "170px", maxWidth: "170px" }}
                         >
                           <div className="flex items-center gap-2">
                             <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                             <span
                               className={cn(
-                                "font-medium text-xs truncate block max-w-[220px]",
+                                "font-medium text-xs truncate block max-w-[130px]",
                                 isUnallocated ? "text-amber-400 italic" : "text-white"
                               )}
                               title={row.customerName}
@@ -645,7 +646,8 @@ export function BulkerCustomerSummaryTab() {
                   <TableRow className="bg-black/50 border-t-2 border-border/80 font-bold hover:bg-black/50">
                     <TableCell
                       colSpan={2}
-                      className="border-r border-border/20 py-3 px-3 text-xs font-semibold text-white tracking-wide"
+                      className="sticky left-0 z-20 bg-[#101114] border-r border-border/40 py-3 px-3 text-xs font-semibold text-white tracking-wide"
+                      style={{ width: "218px", minWidth: "218px", maxWidth: "218px" }}
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-xs bg-white/10 text-white px-2 py-0.5 rounded border border-white/20">

@@ -136,36 +136,55 @@ export function BulkerAuditLogsTab() {
       {
         accessorKey: "serialNumber",
         header: "S.N",
+        meta: {
+          responsive: true,
+          className:
+            "w-12 min-w-12 max-w-12 md:w-[150px] md:min-w-[150px] md:max-w-[150px] text-center px-1 md:px-3 py-2.5 md:py-3",
+        },
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-muted-foreground font-semibold">
-            {row.original.serialNumber !== null && row.original.serialNumber !== undefined
-              ? row.original.serialNumber
-              : "_"}
-          </span>
+          <div className="text-center">
+            <span className="font-mono text-xs text-muted-foreground font-semibold">
+              {row.original.serialNumber !== null && row.original.serialNumber !== undefined
+                ? row.original.serialNumber
+                : "_"}
+            </span>
+          </div>
         ),
       },
       {
         accessorKey: "status",
         header: "Status",
+        meta: {
+          responsive: true,
+          className:
+            "w-[88px] min-w-[88px] max-w-[88px] md:w-[150px] md:min-w-[150px] md:max-w-[150px] text-center px-1 md:px-3 py-2 md:py-3",
+        },
         cell: ({ row }) => {
           const val = row.original.status;
           return (
-            <span
-              className={cn(
-                "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border uppercase tracking-wider",
-                STATUS_COLORS[val] || "bg-zinc-800 text-zinc-300 border-zinc-700"
-              )}
-            >
-              {val}
-            </span>
+            <div className="flex justify-center">
+              <span
+                className={cn(
+                  "inline-flex items-center px-1.5 py-0.5 md:px-2 rounded text-[10px] md:text-[11px] font-medium border uppercase tracking-normal md:tracking-wider",
+                  STATUS_COLORS[val] || "bg-zinc-800 text-zinc-300 border-zinc-700"
+                )}
+              >
+                {val}
+              </span>
+            </div>
           );
         },
       },
       {
         accessorKey: "bulkerNumber",
         header: "Bulker No",
+        meta: {
+          responsive: true,
+          className:
+            "w-auto min-w-[110px] md:w-[150px] md:min-w-[150px] md:max-w-[150px] px-2 md:px-3 py-2.5 md:py-3",
+        },
         cell: ({ row }) => (
-          <span className="font-mono font-medium text-xs text-white">
+          <span className="font-mono font-medium text-xs text-white truncate block">
             {row.original.bulkerNumber}
           </span>
         ),
@@ -173,6 +192,9 @@ export function BulkerAuditLogsTab() {
       {
         accessorKey: "transporterName",
         header: "Transporter",
+        meta: {
+          className: "hidden md:table-cell",
+        },
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground truncate max-w-[140px] block">
             {row.original.transporterName || "—"}
@@ -182,6 +204,9 @@ export function BulkerAuditLogsTab() {
       {
         accessorKey: "permit",
         header: "Permit",
+        meta: {
+          className: "hidden md:table-cell",
+        },
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
             {row.original.permit || "—"}
@@ -191,6 +216,9 @@ export function BulkerAuditLogsTab() {
       {
         accessorKey: "salesOrderNumber",
         header: "SO Number",
+        meta: {
+          className: "hidden md:table-cell",
+        },
         cell: ({ row }) => (
           <span className="font-mono text-xs text-zinc-300">
             {row.original.salesOrderNumber || "—"}
@@ -200,6 +228,9 @@ export function BulkerAuditLogsTab() {
       {
         accessorKey: "customerName",
         header: "Customer",
+        meta: {
+          className: "hidden md:table-cell",
+        },
         cell: ({ row }) => (
           <span className="text-xs text-white truncate max-w-[150px] block">
             {row.original.customerName || "—"}
@@ -209,6 +240,9 @@ export function BulkerAuditLogsTab() {
       {
         accessorKey: "destination",
         header: "Destination",
+        meta: {
+          className: "hidden md:table-cell",
+        },
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground truncate max-w-[140px] block">
             {row.original.destination || "—"}
@@ -218,6 +252,9 @@ export function BulkerAuditLogsTab() {
       {
         accessorKey: "orderDate",
         header: "Order Date",
+        meta: {
+          className: "hidden md:table-cell",
+        },
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
             {row.original.orderDate
@@ -229,6 +266,9 @@ export function BulkerAuditLogsTab() {
       {
         accessorKey: "plantOutAt",
         header: "Gate Out",
+        meta: {
+          className: "hidden md:table-cell",
+        },
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
             {row.original.plantOutAt
@@ -300,6 +340,7 @@ export function BulkerAuditLogsTab() {
         }}
         hideToolbar={isGlobalEmpty}
         enableRowSelection={true}
+        selectionClassName="hidden md:table-cell"
         enableSerialNumber={false}
         searchPlaceholder="Search bulker, transporter, customer..."
         searchValue={searchInput}

@@ -9,7 +9,14 @@ import { format, parseISO } from "date-fns";
 const formatTime = (isoString?: string | null) => {
   if (!isoString) return "-";
   try {
-    return format(parseISO(isoString), "hh:mm a");
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "-";
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
   } catch {
     return isoString;
   }
@@ -18,7 +25,24 @@ const formatTime = (isoString?: string | null) => {
 const formatDate = (dateStr?: string | null) => {
   if (!dateStr) return "-";
   try {
-    return format(parseISO(dateStr), "dd MMM yyyy");
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [yyyy, mm, dd] = dateStr.split("-").map(Number);
+      const d = new Date(Date.UTC(yyyy, mm - 1, dd, 12, 0, 0));
+      return new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(d);
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(d);
   } catch {
     return dateStr;
   }
@@ -48,7 +72,7 @@ export function RecentHistory({ records }: RecentHistoryProps) {
               const inStr = formatTime(record.check_in_time || record.checkInTime);
               const outStr = formatTime(record.check_out_time || record.checkOutTime);
               const dateDisplay = formatDate(
-                record.attendance_date || record.attendanceDate || record.check_in_time
+                record.attendance_date || record.attendanceDate || record.check_in_time || record.checkInTime
               );
 
               return (

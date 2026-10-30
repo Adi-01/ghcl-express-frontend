@@ -75,8 +75,20 @@ const getShiftType = (inTimeStr: string, outTimeStr: string | null) => {
 const formatTimeParts = (isoString: string | null | undefined) => {
   if (!isoString) return { date: "-", time: "-" };
   try {
-    const d = parseISO(isoString);
-    return { date: format(d, "dd MMM"), time: format(d, "hh:mm a") };
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return { date: "-", time: "-" };
+    const dateFormatted = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+    }).format(d);
+    const timeFormatted = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
+    return { date: dateFormatted, time: timeFormatted };
   } catch {
     return { date: "-", time: "-" };
   }

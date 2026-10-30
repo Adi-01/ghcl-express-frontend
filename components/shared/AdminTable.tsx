@@ -92,6 +92,7 @@ export interface AdminTableProps<TData extends Record<string, any>> {
 
   enableColumnToggle?: boolean;
   enableRowSelection?: boolean;
+  selectionClassName?: string;
   enableSerialNumber?: boolean;
 
   onDeleteSelected?: (selectedIds: string[]) => void;
@@ -140,6 +141,7 @@ export function AdminTable<TData extends Record<string, any>>({
   enableColumnToggle = true,
   hideToolbar = false,
   enableRowSelection = true,
+  selectionClassName,
   enableSerialNumber = true,
   onDeleteSelected,
   isDeleting = false,
@@ -190,6 +192,9 @@ export function AdminTable<TData extends Record<string, any>>({
       cols.unshift({
         id: "select",
         size: 40,
+        meta: {
+          className: selectionClassName,
+        },
         header: () => {
           const isAllSelected =
             data.length > 0 && selectedIds.length === data.length;
@@ -259,8 +264,12 @@ export function AdminTable<TData extends Record<string, any>>({
       cols.push({
         id: "actions",
         header: "Action",
-        size: 50,
+        size: 54,
         enableHiding: false,
+        meta: {
+          responsive: true,
+          className: "w-[54px] min-w-[54px] max-w-[54px] text-center px-1 md:px-2 py-2 md:py-3",
+        },
         cell: ({ row }: any) => (
           <div
             className="flex justify-center"
@@ -316,6 +325,7 @@ export function AdminTable<TData extends Record<string, any>>({
   }, [
     columns,
     enableRowSelection,
+    selectionClassName,
     renderRowActions,
     enableSerialNumber,
     enablePagination,
@@ -482,15 +492,17 @@ export function AdminTable<TData extends Record<string, any>>({
                   >
                     {headerGroup.headers.map((header: any) => {
                       const columnSize = header.column.getSize();
+                      const meta = header.column.columnDef.meta as any;
+                      const isResponsive = Boolean(meta?.responsive);
                       return (
                         <TableHead
                           key={header.id}
                           className={cn(
                             "border-r border-border/30 last:border-r-0 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap",
-                            (header.column.columnDef.meta as any)?.className
+                            meta?.className
                           )}
                           style={
-                            columnSize
+                            !isResponsive && columnSize
                               ? {
                                   width: `${columnSize}px`,
                                   minWidth: `${columnSize}px`,
@@ -556,15 +568,17 @@ export function AdminTable<TData extends Record<string, any>>({
                     >
                       {row.getVisibleCells().map((cell: any) => {
                         const columnSize = cell.column.getSize();
+                        const meta = cell.column.columnDef.meta as any;
+                        const isResponsive = Boolean(meta?.responsive);
                         return (
                           <TableCell
                             key={cell.id}
                             className={cn(
                               "border-r border-border/30 last:border-r-0 py-3 px-3 text-sm text-foreground overflow-hidden text-ellipsis whitespace-nowrap",
-                              (cell.column.columnDef.meta as any)?.className
+                              meta?.className
                             )}
                             style={
-                              columnSize
+                              !isResponsive && columnSize
                                 ? {
                                     width: `${columnSize}px`,
                                     minWidth: `${columnSize}px`,

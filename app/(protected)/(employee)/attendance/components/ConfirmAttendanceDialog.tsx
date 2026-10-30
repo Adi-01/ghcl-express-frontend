@@ -50,6 +50,7 @@ export function ConfirmAttendanceDialog({
 
   const timeStr = now
     ? now.toLocaleTimeString("en-IN", {
+        timeZone: "Asia/Kolkata",
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
@@ -59,6 +60,7 @@ export function ConfirmAttendanceDialog({
 
   const dateStr = now
     ? now.toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
         weekday: "long",
         day: "numeric",
         month: "long",
