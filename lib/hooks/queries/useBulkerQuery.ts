@@ -116,29 +116,28 @@ export function useCustomerLatestSOQuery(customerName: string) {
 }
 
 export interface BulkerSummaryQueryParams {
-  mode: "date" | "month";
-  date?: string;
+  type: "active" | "transporter_monthly";
   month?: string;
   search?: string;
 }
 
 /**
- * Hook to fetch Customer Bulker Dispatch Summary aggregated by customer name
- * and statuses (VRA, ALLOCATED, SEND, OUT, TOTAL) for date or month.
+ * Hook to fetch Customer Bulker Dispatch Summary:
+ * - Active: live active bulkers (VRA, ALLOCATED, SEND, HOLD) grouped by customer name.
+ * - Transporter Monthly: monthwise customer-to-transporter association breakdown.
  */
-export function useBulkerSummaryQuery(params: BulkerSummaryQueryParams) {
+export function useBulkerSummaryQuery<T = BulkerSummaryResponse>(params: BulkerSummaryQueryParams) {
   const queryParams = new URLSearchParams();
-  queryParams.set("mode", params.mode);
-  if (params.date) queryParams.set("date", params.date);
+  queryParams.set("type", params.type);
   if (params.month) queryParams.set("month", params.month);
   if (params.search) queryParams.set("search", params.search);
 
   const queryString = queryParams.toString();
 
-  return useQuery<BulkerSummaryResponse>({
+  return useQuery<T>({
     queryKey: QUERY_KEYS.bulker.summary(params),
     queryFn: () =>
-      reactQueryFetch<BulkerSummaryResponse>(
+      reactQueryFetch<T>(
         `/api/admin/bulkerdispatch/summary?${queryString}`
       ),
     placeholderData: (prev) => prev,

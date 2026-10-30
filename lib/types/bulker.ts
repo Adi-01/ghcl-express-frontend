@@ -119,26 +119,48 @@ export interface CustomerSummaryItem {
   vraCount: number;
   allocatedCount: number;
   sendCount: number;
-  outCount: number;
+  holdCount: number;
   totalCount: number;
   bulkers: CustomerBulkerDetail[];
 }
 
-export interface BulkerSummaryResponse {
+export interface ActiveCustomerSummaryResponse {
+  type: "active";
   summary: CustomerSummaryItem[];
   totals: {
     vraCount: number;
     allocatedCount: number;
     sendCount: number;
-    outCount: number;
+    holdCount: number;
     totalCount: number;
   };
-  period: {
-    mode: "date" | "month";
-    value: string;
-    startDate: string;
-    endDate: string;
+}
+
+export interface TransporterAssociation {
+  transporterName: string;
+  count: number;
+}
+
+export interface CustomerTransporterSummaryItem {
+  customerName: string;
+  totalCount: number;
+  transporters: TransporterAssociation[];
+  bulkers: CustomerBulkerDetail[];
+}
+
+export interface MonthlyTransporterSummaryResponse {
+  type: "transporter_monthly";
+  month: string;
+  summary: CustomerTransporterSummaryItem[];
+  totals: {
+    totalCustomers: number;
+    totalDispatches: number;
   };
 }
+
+export type BulkerSummaryResponse =
+  | ActiveCustomerSummaryResponse
+  | MonthlyTransporterSummaryResponse;
+
 
 

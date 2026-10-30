@@ -284,34 +284,41 @@ export function AdminBulkerClient() {
         className="w-full space-y-4"
       >
         <div className="flex items-center justify-between gap-4">
-          <TabsList className="bg-[#121316] border border-border p-1 h-10 rounded-lg">
+          <TabsList className="bg-[#121316] border border-border p-1 h-10 rounded-lg w-full sm:w-auto grid grid-cols-4 sm:flex">
             <TabsTrigger
               value="dispatches"
-              className="text-xs px-4 py-1.5 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-muted-foreground flex items-center gap-1.5"
+              title="Dispatch Logs"
+              
             >
-              <ClipboardList className="w-3.5 h-3.5" />
-              Dispatch Logs
+              <ClipboardList className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Dispatch Logs</span>
             </TabsTrigger>
             <TabsTrigger
               value="summary"
-              className="text-xs px-4 py-1.5 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-muted-foreground flex items-center gap-1.5"
+              title="Customer Summary"
+              
             >
-              <BarChart3 className="w-3.5 h-3.5" />
-              Customer Summary
+              <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Customer Summary</span>
+              
             </TabsTrigger>
             <TabsTrigger
               value="bulker"
-              className="text-xs px-4 py-1.5 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-muted-foreground flex items-center gap-1.5"
+              title="Bulkers"
+              
             >
-              <Truck className="w-3.5 h-3.5" />
-              Bulkers
+              <Truck className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Bulkers</span>
+              
             </TabsTrigger>
             <TabsTrigger
               value="customer"
-              className="text-xs px-4 py-1.5 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-muted-foreground flex items-center gap-1.5"
+              title="Customers"
+              
             >
-              <Building2 className="w-3.5 h-3.5" />
-              Customers
+              <Building2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Customers</span>
+              
             </TabsTrigger>
           </TabsList>
         </div>
