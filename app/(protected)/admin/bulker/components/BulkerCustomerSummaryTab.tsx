@@ -127,11 +127,16 @@ export function BulkerCustomerSummaryTab() {
 
   // Monthly data
   const monthlySummaryRows = useMemo(() => monthlyQuery.data?.summary || [], [monthlyQuery.data]);
+  const transportersList = useMemo(
+    () => monthlyQuery.data?.transportersList || [],
+    [monthlyQuery.data]
+  );
   const monthlyTotals = useMemo(
     () =>
       monthlyQuery.data?.totals || {
         totalCustomers: 0,
         totalDispatches: 0,
+        transporterTotals: {},
       },
     [monthlyQuery.data]
   );
@@ -507,8 +512,8 @@ export function BulkerCustomerSummaryTab() {
           </div>
         ) : (
           <div className="w-full bg-[#121316] border border-border/60 rounded-xl overflow-hidden shadow-sm animate-in fade-in duration-300">
-            <div className="w-full overflow-x-auto no-scrollbar">
-              <Table className="w-full min-w-full table-fixed border-collapse">
+            <div className="w-full overflow-x-auto">
+              <Table className="w-full min-w-full border-collapse">
                 <TableHeader className="bg-black/30 border-b border-border/60">
                   <TableRow className="hover:bg-transparent border-b border-border/40">
                     <TableHead
@@ -519,21 +524,31 @@ export function BulkerCustomerSummaryTab() {
                     </TableHead>
                     <TableHead
                       className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap"
-                      style={{ width: "240px", minWidth: "240px", maxWidth: "240px" }}
+                      style={{ width: "240px", minWidth: "220px", maxWidth: "300px" }}
                     >
-                      Customer Name
+                      Customer
                     </TableHead>
-                    <TableHead
-                      className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap"
-                      style={{ width: "450px", minWidth: "350px" }}
-                    >
-                      Associated Transporters
-                    </TableHead>
+
+                    {/* Dynamic Transporter Columns */}
+                    {transportersList.map((tName) => (
+                      <TableHead
+                        key={tName}
+                        className="border-r border-border/30 text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                        style={{ minWidth: "120px" }}
+                        title={tName}
+                      >
+                        <span className="truncate block max-w-[150px] mx-auto text-zinc-300">
+                          {tName}
+                        </span>
+                      </TableHead>
+                    ))}
+
+                    {/* Customer Total Column T */}
                     <TableHead
                       className="text-xs text-muted-foreground font-semibold py-3 px-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
-                      style={{ width: "130px", minWidth: "130px", maxWidth: "130px" }}
+                      style={{ width: "80px", minWidth: "80px" }}
                     >
-                      Total Dispatches
+                      T
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -555,16 +570,16 @@ export function BulkerCustomerSummaryTab() {
                           {String(idx + 1).padStart(2, "0")}
                         </TableCell>
 
-                        {/* Customer Name */}
+                        {/* Customer */}
                         <TableCell
                           className="border-r border-border/20 py-2.5 px-3"
-                          style={{ width: "240px", minWidth: "240px", maxWidth: "240px" }}
+                          style={{ width: "240px", minWidth: "220px", maxWidth: "300px" }}
                         >
                           <div className="flex items-center gap-2">
                             <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                             <span
                               className={cn(
-                                "font-medium text-xs truncate block max-w-[200px]",
+                                "font-medium text-xs truncate block max-w-[220px]",
                                 isUnallocated ? "text-amber-400 italic" : "text-white"
                               )}
                               title={row.customerName}
@@ -574,32 +589,33 @@ export function BulkerCustomerSummaryTab() {
                           </div>
                         </TableCell>
 
-                        {/* Associated Transporters */}
-                        <TableCell
-                          className="border-r border-border/20 py-2.5 px-3"
-                          style={{ minWidth: "350px" }}
-                        >
-                          <div className="flex flex-wrap items-center gap-1.5 py-0.5">
-                            {row.transporters.map((t) => (
+                        {/* Transporter Columns Matrix */}
+                        {transportersList.map((tName) => {
+                          const count = row.transporterCounts?.[tName] ?? 0;
+                          return (
+                            <TableCell
+                              key={tName}
+                              className="border-r border-border/20 py-2.5 px-3 text-center"
+                              style={{ minWidth: "120px" }}
+                            >
                               <span
-                                key={t.transporterName}
-                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-zinc-800/80 border border-border/80 text-zinc-200"
+                                className={cn(
+                                  "inline-block min-w-6 text-xs font-mono font-medium py-0.5 px-1.5 rounded text-center",
+                                  count > 0
+                                    ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                                    : "text-zinc-600"
+                                )}
                               >
-                                <span className="truncate max-w-[150px]" title={t.transporterName}>
-                                  {t.transporterName}
-                                </span>
-                                <span className="font-mono font-bold text-sky-400 bg-black/40 px-1 rounded text-[10px]">
-                                  {t.count}
-                                </span>
+                                {count}
                               </span>
-                            ))}
-                          </div>
-                        </TableCell>
+                            </TableCell>
+                          );
+                        })}
 
-                        {/* Total Dispatches Interactive Button */}
+                        {/* Row Total T Interactive Button */}
                         <TableCell
                           className="py-2.5 px-3 text-center"
-                          style={{ width: "130px", minWidth: "130px", maxWidth: "130px" }}
+                          style={{ width: "80px", minWidth: "80px" }}
                         >
                           <button
                             type="button"
@@ -625,21 +641,41 @@ export function BulkerCustomerSummaryTab() {
                     );
                   })}
 
-                  {/* Monthly Grand Summary Footer Row */}
+                  {/* Monthly Transporter Totals Footer Row T */}
                   <TableRow className="bg-black/50 border-t-2 border-border/80 font-bold hover:bg-black/50">
                     <TableCell
                       colSpan={2}
-                      className="border-r border-border/20 py-3 px-3 text-xs font-semibold text-white tracking-wide uppercase"
+                      className="border-r border-border/20 py-3 px-3 text-xs font-semibold text-white tracking-wide"
                     >
-                      Total For {selectedMonthLabel}
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-xs bg-white/10 text-white px-2 py-0.5 rounded border border-white/20">
+                          T
+                        </span>
+                        <span className="text-zinc-300 uppercase tracking-wider text-[11px]">
+                          Total
+                        </span>
+                      </div>
                     </TableCell>
-                    <TableCell className="border-r border-border/20 py-3 px-3 text-xs text-muted-foreground font-normal">
-                      <span className="font-medium text-white font-mono">
-                        {monthlyTotals.totalCustomers}
-                      </span>{" "}
-                      Active Customers Served
-                    </TableCell>
-                    <TableCell className="py-3 px-3 text-center">
+
+                    {/* Transporter Column Totals */}
+                    {transportersList.map((tName) => {
+                      const colTotal = monthlyTotals.transporterTotals?.[tName] ?? 0;
+                      return (
+                        <TableCell
+                          key={tName}
+                          className="border-r border-border/20 py-3 px-3 text-center text-xs font-mono text-sky-400 font-bold"
+                          style={{ minWidth: "120px" }}
+                        >
+                          {colTotal}
+                        </TableCell>
+                      );
+                    })}
+
+                    {/* Grand Total Dispatches */}
+                    <TableCell
+                      className="py-3 px-3 text-center"
+                      style={{ width: "80px", minWidth: "80px" }}
+                    >
                       <span className="inline-block px-3 py-1 rounded bg-white text-black font-mono font-bold text-xs shadow-sm">
                         {monthlyTotals.totalDispatches}
                       </span>

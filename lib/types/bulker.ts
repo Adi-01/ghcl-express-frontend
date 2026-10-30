@@ -144,6 +144,7 @@ export interface TransporterAssociation {
 export interface CustomerTransporterSummaryItem {
   customerName: string;
   totalCount: number;
+  transporterCounts?: Record<string, number>;
   transporters: TransporterAssociation[];
   bulkers: CustomerBulkerDetail[];
 }
@@ -151,10 +152,12 @@ export interface CustomerTransporterSummaryItem {
 export interface MonthlyTransporterSummaryResponse {
   type: "transporter_monthly";
   month: string;
+  transportersList: string[];
   summary: CustomerTransporterSummaryItem[];
   totals: {
     totalCustomers: number;
     totalDispatches: number;
+    transporterTotals?: Record<string, number>;
   };
 }
 
